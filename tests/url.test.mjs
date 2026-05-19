@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseSharingId, getSharingPageUrl } from '../dist/utils/url.js';
+import { parseSharingId, getSharingPageUrl, normalizeCodesignAssetUrl } from '../dist/utils/url.js';
 import { CodesignError } from '../dist/codesign/errors.js';
 
 test('parses bare numeric id', () => {
@@ -48,4 +48,27 @@ test('throws on URL without /s/<id> path', () => {
 
 test('getSharingPageUrl uses configured origin', () => {
   assert.equal(getSharingPageUrl('12345678'), 'https://codesign.qq.com/app/s/12345678');
+});
+
+test('normalizeCodesignAssetUrl rewrites CoDesign COS slice URLs to CDN', () => {
+  assert.equal(
+    normalizeCodesignAssetUrl(
+      'https://codesign-1258344699.cos.accelerate.myqcloud.com/screen-slices/2026/04/01/token/path/slice.png',
+    ),
+    'https://cdn4.codesign.qq.com/screen-slices/2026/04/01/token/path/slice.png',
+  );
+});
+
+test('normalizeCodesignAssetUrl keeps query strings on rewritten slice URLs', () => {
+  assert.equal(
+    normalizeCodesignAssetUrl(
+      'https://codesign-1258344699.cos.accelerate.myqcloud.com/screen-slices/2026/04/01/token/path/slice.png?imageMogr2/format/png',
+    ),
+    'https://cdn4.codesign.qq.com/screen-slices/2026/04/01/token/path/slice.png?imageMogr2/format/png',
+  );
+});
+
+test('normalizeCodesignAssetUrl leaves unrelated URLs unchanged', () => {
+  const url = 'https://cdn4.codesign.qq.com/meta/2026/04/01/token/spec.json';
+  assert.equal(normalizeCodesignAssetUrl(url), url);
 });

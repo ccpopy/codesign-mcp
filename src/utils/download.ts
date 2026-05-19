@@ -1,6 +1,7 @@
 import { mkdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { resolve, dirname, extname, basename } from 'node:path';
 import { createHash } from 'node:crypto';
+import type { APIRequestContext } from 'playwright';
 import { config } from '../config.js';
 import { CodesignError } from '../codesign/errors.js';
 
@@ -17,12 +18,18 @@ export interface DownloadResult {
   mime: string | null;
 }
 
+export interface DownloadOptions {
+  request?: APIRequestContext;
+  headers?: Record<string, string>;
+}
+
 // 把 URL 下载到 data/artifacts/<subdir>/<filename>。filename 为空时根据 URL 推断或哈希。
 export async function downloadToArtifact(
   url: string,
   subdir: string,
   filename?: string,
   errorCode: 'SLICE_FETCH_FAILED' | 'META_FETCH_FAILED' = 'SLICE_FETCH_FAILED',
+  options: DownloadOptions = {},
 ): Promise<DownloadResult> {
   const targetDir = resolve(config.artifactsDir, subdir);
   mkdirSync(targetDir, { recursive: true });
@@ -34,14 +41,17 @@ export async function downloadToArtifact(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), config.metaTimeoutMs);
   try {
-    const resp = await fetch(url, { headers: DEFAULT_HEADERS, signal: controller.signal });
+    const headers = { ...DEFAULT_HEADERS, ...options.headers };
+    const resp = options.request
+      ? await fetchWithBrowserContext(options.request, url, headers)
+      : await fetchWithNode(url, headers, controller.signal);
     if (!resp.ok) {
       throw new CodesignError(errorCode, `download failed: HTTP ${resp.status}`, {
         url,
         status: resp.status,
       });
     }
-    const buf = Buffer.from(await resp.arrayBuffer());
+    const buf = resp.body;
     const tempPath = `${finalPath}.${process.pid}.${Date.now()}.tmp`;
     try {
       writeFileSync(tempPath, buf);
@@ -54,7 +64,7 @@ export async function downloadToArtifact(
       url,
       path: finalPath,
       bytes: buf.byteLength,
-      mime: resp.headers.get('content-type'),
+      mime: resp.mime,
     };
   } catch (err) {
     if (err instanceof CodesignError) throw err;
@@ -62,6 +72,35 @@ export async function downloadToArtifact(
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function fetchWithNode(
+  url: string,
+  headers: Record<string, string>,
+  signal: AbortSignal,
+): Promise<{ ok: boolean; status: number; body: Buffer; mime: string | null }> {
+  const resp = await fetch(url, { headers, signal });
+  return {
+    ok: resp.ok,
+    status: resp.status,
+    body: Buffer.from(await resp.arrayBuffer()),
+    mime: resp.headers.get('content-type'),
+  };
+}
+
+async function fetchWithBrowserContext(
+  request: APIRequestContext,
+  url: string,
+  headers: Record<string, string>,
+): Promise<{ ok: boolean; status: number; body: Buffer; mime: string | null }> {
+  const resp = await request.get(url, { headers, timeout: config.metaTimeoutMs });
+  const responseHeaders = resp.headers();
+  return {
+    ok: resp.ok(),
+    status: resp.status(),
+    body: await resp.body(),
+    mime: responseHeaders['content-type'] ?? null,
+  };
 }
 
 function deriveFilename(url: string): string {

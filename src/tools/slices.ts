@@ -4,7 +4,7 @@ import { browserManager } from '../browser/manager.js';
 import { getSharingDetail } from '../codesign/sharing.js';
 import { fetchSliceManifest, findSliceByObjectId } from '../codesign/slices.js';
 import { CodesignError } from '../codesign/errors.js';
-import { parseSharingId } from '../utils/url.js';
+import { normalizeCodesignAssetUrl, parseSharingId } from '../utils/url.js';
 import { downloadToArtifact } from '../utils/download.js';
 import { errorResult } from './artboards.js';
 import { pickScreen, summarizeScreens } from './spec.js';
@@ -12,6 +12,11 @@ import { getLogger } from '../logger.js';
 import type { SharingScreen, SliceExportable } from '../codesign/types.js';
 
 const log = getLogger();
+
+const SLICE_DOWNLOAD_HEADERS = {
+  Accept: 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+  Referer: 'https://codesign.qq.com/',
+};
 
 const inputSchema = {
   sharingUrl: z.string().min(1),
@@ -117,6 +122,7 @@ export function registerSlicesTool(server: McpServer): void {
           format?: string;
           scale?: number;
           url: string;
+          downloadUrl?: string;
           path: string;
           bytes: number;
           mime: string | null;
@@ -127,17 +133,23 @@ export function registerSlicesTool(server: McpServer): void {
             log.warn({ exportable: e.name }, 'exportable has no screenshot.url');
             continue;
           }
+          const downloadUrl = normalizeCodesignAssetUrl(url);
           const filename = `${slice.object_id}-${e.scale ?? 1}x.${e.format ?? extFromMime(e.screenshot?.mime) ?? 'png'}`;
           const dl = await downloadToArtifact(
-            url,
+            downloadUrl,
             `${sharingId}/slices`,
             filename,
             'SLICE_FETCH_FAILED',
+            {
+              request: call.context.request,
+              headers: SLICE_DOWNLOAD_HEADERS,
+            },
           );
           downloads.push({
             format: e.format,
             scale: e.scale,
             url,
+            downloadUrl: downloadUrl === url ? undefined : downloadUrl,
             path: dl.path,
             bytes: dl.bytes,
             mime: dl.mime,

@@ -29,3 +29,25 @@ export function parseSharingId(input: string): string {
 export function getSharingPageUrl(sharingId: string, origin = 'https://codesign.qq.com'): string {
   return `${origin}/app/s/${sharingId}`;
 }
+
+export function normalizeCodesignAssetUrl(
+  input: string,
+  cdnOrigin = 'https://cdn4.codesign.qq.com',
+): string {
+  let source: URL;
+  try {
+    source = new URL(input);
+  } catch {
+    return input;
+  }
+
+  if (
+    /^codesign-\d+\.cos(?:\.[a-z0-9-]+)*\.myqcloud\.com$/i.test(source.hostname) &&
+    source.pathname.startsWith('/screen-slices/')
+  ) {
+    const cdn = new URL(cdnOrigin);
+    return `${cdn.origin}${source.pathname}${source.search}`;
+  }
+
+  return input;
+}
