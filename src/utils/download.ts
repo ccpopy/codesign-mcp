@@ -1,5 +1,5 @@
 import { mkdirSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { resolve, dirname, extname, basename } from 'node:path';
+import { resolve, dirname, extname, basename, relative, isAbsolute, sep } from 'node:path';
 import { createHash } from 'node:crypto';
 import type { APIRequestContext } from 'playwright';
 import { config } from '../config.js';
@@ -36,11 +36,11 @@ export async function downloadToArtifact(
   errorCode: 'SLICE_FETCH_FAILED' | 'META_FETCH_FAILED' = 'SLICE_FETCH_FAILED',
   options: DownloadOptions = {},
 ): Promise<DownloadResult> {
-  const targetDir = resolve(config.artifactsDir, subdir);
+  const targetDir = resolveInside(config.artifactsDir, subdir);
   mkdirSync(targetDir, { recursive: true });
 
   const finalName = filename ?? deriveFilename(url);
-  const finalPath = resolve(targetDir, finalName);
+  const finalPath = resolveInside(targetDir, finalName);
   mkdirSync(dirname(finalPath), { recursive: true });
 
   const existing = getExistingArtifact(finalPath, options.expectedBytes);
@@ -86,6 +86,20 @@ export async function downloadToArtifact(
   } finally {
     clearTimeout(timer);
   }
+}
+
+function resolveInside(root: string, child: string): string {
+  const resolvedRoot = resolve(root);
+  const resolvedTarget = resolve(resolvedRoot, child);
+  const rel = relative(resolvedRoot, resolvedTarget);
+  if (rel === '' || (rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel))) {
+    return resolvedTarget;
+  }
+  throw new CodesignError('ARTIFACT_PATH_INVALID', 'artifact path escapes artifactsDir', {
+    root: resolvedRoot,
+    child,
+    resolvedTarget,
+  });
 }
 
 function getExistingArtifact(path: string, expectedBytes: number | undefined): { bytes: number } | undefined {

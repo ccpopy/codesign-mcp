@@ -8,6 +8,9 @@ const PACKAGE_ROOT = resolve(here, '..');
 const PACKAGE_JSON_PATH = resolve(PACKAGE_ROOT, 'package.json');
 
 type PathSource = 'CODESIGN_WORKSPACE_DIR' | 'INIT_CWD' | 'process.cwd';
+type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error';
+
+const LOG_LEVELS = new Set<LogLevel>(['trace', 'debug', 'info', 'warn', 'error']);
 
 function resolveWorkspaceRoot(): { path: string; source: PathSource } {
   if (process.env.CODESIGN_WORKSPACE_DIR) {
@@ -38,13 +41,26 @@ function envInt(name: string, fallback: number): number {
   const raw = process.env[name];
   if (raw == null || raw === '') return fallback;
   const n = Number(raw);
-  return Number.isFinite(n) ? n : fallback;
+  if (!Number.isSafeInteger(n) || n < 0) {
+    throw new Error(`${name} must be a non-negative integer, got ${JSON.stringify(raw)}`);
+  }
+  return n;
 }
 
 function envBool(name: string, fallback: boolean): boolean {
   const raw = process.env[name];
-  if (raw == null) return fallback;
-  return ['1', 'true', 'yes', 'on'].includes(raw.toLowerCase());
+  if (raw == null || raw === '') return fallback;
+  const normalized = raw.toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(normalized)) return true;
+  if (['0', 'false', 'no', 'off'].includes(normalized)) return false;
+  throw new Error(`${name} must be one of 1, true, yes, on, 0, false, no, off; got ${JSON.stringify(raw)}`);
+}
+
+function envLogLevel(name: string, fallback: LogLevel): LogLevel {
+  const raw = process.env[name];
+  if (raw == null || raw === '') return fallback;
+  if (LOG_LEVELS.has(raw as LogLevel)) return raw as LogLevel;
+  throw new Error(`${name} must be one of ${Array.from(LOG_LEVELS).join(', ')}; got ${JSON.stringify(raw)}`);
 }
 
 export const config = {
@@ -64,7 +80,7 @@ export const config = {
   logFile: process.env.CODESIGN_LOG_FILE
     ? resolve(process.env.CODESIGN_LOG_FILE)
     : resolve(DATA_DIR, 'codesign-mcp.log'),
-  logLevel: (process.env.CODESIGN_LOG_LEVEL ?? 'info') as 'trace' | 'debug' | 'info' | 'warn' | 'error',
+  logLevel: envLogLevel('CODESIGN_LOG_LEVEL', 'info'),
   idleMs: envInt('CODESIGN_IDLE_MS', 10 * 60 * 1000),
   keepBrowser: envBool('CODESIGN_KEEP_BROWSER', false),
   origin: 'https://codesign.qq.com',

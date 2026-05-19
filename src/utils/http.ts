@@ -2,6 +2,7 @@
 // 单独抽出来便于复用和后续替换实现。
 
 import type { Page } from 'playwright';
+import { CodesignError } from '../codesign/errors.js';
 
 export interface SameOriginRequest {
   url: string;
@@ -14,6 +15,13 @@ export interface SameOriginResponse<T = unknown> {
   status: number;
   body: T;
   rawText?: string;
+}
+
+interface EvaluateResponse {
+  status: number;
+  body: unknown;
+  rawText?: string;
+  fetchError?: string;
 }
 
 export async function requestJson<T = unknown>(
@@ -42,7 +50,12 @@ export async function requestJson<T = unknown>(
         }
         return { status: r.status, body: parsed, rawText: text };
       } catch (e: unknown) {
-        return { status: 0, body: { error: (e as Error).message }, rawText: undefined };
+        return {
+          status: 0,
+          body: null,
+          rawText: undefined,
+          fetchError: e instanceof Error ? e.message : String(e),
+        };
       }
     },
     {
@@ -51,6 +64,11 @@ export async function requestJson<T = unknown>(
       headers: req.headers ?? {},
       body: req.body,
     },
-  );
+  ) as EvaluateResponse;
+  if (result.fetchError) {
+    throw new CodesignError('SHARING_FETCH_FAILED', `same-origin request failed: ${result.fetchError}`, {
+      url: req.url,
+    });
+  }
   return result as SameOriginResponse<T>;
 }

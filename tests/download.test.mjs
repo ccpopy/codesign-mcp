@@ -4,6 +4,7 @@ import { after, test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { config } from '../dist/config.js';
+import { CodesignError } from '../dist/codesign/errors.js';
 import { downloadToArtifact } from '../dist/utils/download.js';
 
 const testSubdir = `download-test-${process.pid}`;
@@ -59,6 +60,44 @@ test('downloadToArtifact overwrites an existing artifact when expectedBytes diff
   assert.equal(result.reusedExisting, undefined);
   assert.equal(result.writeAttempts, 1);
   assert.equal(readFileSync(target, 'utf8'), 'new!');
+});
+
+test('downloadToArtifact rejects a subdir that escapes artifactsDir', async () => {
+  const request = fakeRequest('must-not-fetch');
+  await assert.rejects(
+    () => downloadToArtifact(
+      'https://example.test/asset.bin',
+      '../outside-artifacts',
+      'asset.bin',
+      'SLICE_FETCH_FAILED',
+      { request },
+    ),
+    (err) => {
+      assert.ok(err instanceof CodesignError);
+      assert.equal(err.code, 'ARTIFACT_PATH_INVALID');
+      return true;
+    },
+  );
+  assert.equal(request.calls(), 0);
+});
+
+test('downloadToArtifact rejects a filename that escapes its artifact subdir', async () => {
+  const request = fakeRequest('must-not-fetch');
+  await assert.rejects(
+    () => downloadToArtifact(
+      'https://example.test/asset.bin',
+      `${testSubdir}/escape`,
+      '../asset.bin',
+      'SLICE_FETCH_FAILED',
+      { request },
+    ),
+    (err) => {
+      assert.ok(err instanceof CodesignError);
+      assert.equal(err.code, 'ARTIFACT_PATH_INVALID');
+      return true;
+    },
+  );
+  assert.equal(request.calls(), 0);
 });
 
 function fakeRequest(body) {
