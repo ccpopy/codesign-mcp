@@ -1,0 +1,44 @@
+{
+  "sample": {
+    "response": {
+      "body": [
+        {
+          "name": "Sample Logo",
+          "object_id": "SLICE_LAYER_OBJECT_ID",
+          "master_id": "SLICE_LAYER_MASTER_ID",
+          "rect": {
+            "x": 24,
+            "y": 240,
+            "width": 96,
+            "height": 96
+          },
+          "exportables": [
+            {
+              "name": "Sample Logo",
+              "scale": 1,
+              "size": 4096,
+              "format": "png",
+              "object_id": "SLICE_EXPORT_OBJECT_ID",
+              "exported": true,
+              "screenshot": {
+                "object_id": "SLICE_SCREENSHOT_OBJECT_ID",
+                "type": "image",
+                "name": "sample-logo.png",
+                "filename": "sample-logo.png",
+                "ext": "png",
+                "mime": "image/png",
+                "length": 4096,
+                "size": 4096,
+                "from": 0,
+                "to": 4096,
+                "url": "https://cdn4.codesign.qq.com/screen-slices/YYYY/MM/DD/TOKEN_A/TOKEN_B/SLICE.png",
+                "width": 96,
+                "height": 96
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

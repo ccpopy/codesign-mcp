@@ -1,0 +1,45 @@
+{
+  "sample": {
+    "response": {
+      "body": {
+        "id": 100000001,
+        "title": "Sample Sharing",
+        "designs": [
+          {
+            "id": 200000001,
+            "name": "Sample Design",
+            "screens": [
+              {
+                "id": 300000001,
+                "object_id": "ARTBOARD_OBJECT_ID",
+                "name": "Sample Artboard",
+                "width": 375,
+                "height": 812,
+                "frame": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 375,
+                  "height": 812
+                },
+                "meta_url": "https://cdn4.codesign.qq.com/meta/YYYY/MM/DD/TOKEN_A/TOKEN_B/SPEC.json",
+                "slices_url": "https://cdn4.codesign.qq.com/meta/YYYY/MM/DD/TOKEN_A/TOKEN_B/SLICES.json",
+                "slices_count": 1,
+                "image": {
+                  "width": 375,
+                  "height": 812,
+                  "url": "https://cdn4.codesign.qq.com/screens/previews/YYYY/MM/DD/PREVIEW.png",
+                  "cover_url": "https://cdn4.codesign.qq.com/screens/covers/YYYY/MM/DD/COVER.png",
+                  "extension": "png",
+                  "mime": "image/png",
+                  "size": 8192,
+                  "slices_count": 1,
+                  "slices_base_url": "https://cdn4.codesign.qq.com/screens/YYYY/MM/DD/TOKEN_A/TOKEN_B/SPEC/slices/"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

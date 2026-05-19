@@ -1,0 +1,12 @@
+{
+  "description": "Synthetic fixtures for parser and tool contract tests. These files do not contain user HAR data.",
+  "fixtures": [
+    "sharing-state-keys.json",
+    "sharing-detail.json",
+    "user.json",
+    "meta-spec-object.json",
+    "meta-slice-manifest.json",
+    "designs-detail.json",
+    "oauth-check.json"
+  ]
+}

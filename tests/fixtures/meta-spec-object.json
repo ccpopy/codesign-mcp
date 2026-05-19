@@ -1,0 +1,116 @@
+{
+  "sample": {
+    "response": {
+      "body": {
+        "object_id": "ARTBOARD_OBJECT_ID",
+        "name": "Sample Artboard",
+        "page_id": "PAGE_ID",
+        "page_name": "Sample Page",
+        "slug": "sample-artboard",
+        "x": 0,
+        "y": 0,
+        "width": 375,
+        "height": 812,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 375,
+          "height": 812
+        },
+        "layers": [
+          {
+            "parent_id": "ARTBOARD_OBJECT_ID",
+            "object_id": "TEXT_LAYER_OBJECT_ID",
+            "master_id": "TEXT_LAYER_MASTER_ID",
+            "type": "text",
+            "name": "Sample Title",
+            "rect": {
+              "x": 24,
+              "y": 32,
+              "width": 240,
+              "height": 32
+            },
+            "layerIndex": 1,
+            "exportable": false,
+            "rotation": 0,
+            "radius": 0,
+            "borders": [],
+            "fills": [
+              {
+                "fillType": "color",
+                "color": {
+                  "r": 17,
+                  "g": 24,
+                  "b": 39,
+                  "a": 1,
+                  "color-hex": "#111827",
+                  "css-rgba": "rgba(17, 24, 39, 1)",
+                  "ui-color": "#111827"
+                }
+              }
+            ],
+            "shadows": [],
+            "effects": [],
+            "opacity": 1,
+            "styleName": "Title",
+            "content": "Sample Title",
+            "color": {
+              "r": 17,
+              "g": 24,
+              "b": 39,
+              "a": 1,
+              "color-hex": "#111827",
+              "css-rgba": "rgba(17, 24, 39, 1)",
+              "ui-color": "#111827"
+            },
+            "fontSize": 24,
+            "fontFace": "Inter",
+            "fontWeight": "700",
+            "textAlign": "left",
+            "letterSpacing": 0,
+            "lineHeight": 32,
+            "paragraphSpacing": 0,
+            "css": [
+              "font-size: 24px;",
+              "line-height: 32px;",
+              "color: #111827;"
+            ]
+          }
+        ],
+        "fills": [],
+        "css": [
+          "width: 375px;",
+          "height: 812px;"
+        ],
+        "groups": [
+          {
+            "parent_id": "ARTBOARD_OBJECT_ID",
+            "object_id": "GROUP_OBJECT_ID",
+            "master_id": "GROUP_MASTER_ID",
+            "type": "group",
+            "name": "Sample Group",
+            "rect": {
+              "x": 16,
+              "y": 96,
+              "width": 343,
+              "height": 120
+            },
+            "layerIndex": 2,
+            "exportable": false,
+            "rotation": 0,
+            "radius": 8,
+            "borders": [],
+            "fills": [],
+            "shadows": [],
+            "effects": [],
+            "opacity": 1,
+            "styleName": "Card",
+            "css": [
+              "border-radius: 8px;"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

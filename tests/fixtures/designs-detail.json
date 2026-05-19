@@ -1,0 +1,17 @@
+{
+  "sample": {
+    "response": {
+      "body": {
+        "id": 200000001,
+        "name": "Sample Design",
+        "sections": [
+          {
+            "id": 500000001,
+            "name": "Sample Section",
+            "screens": []
+          }
+        ]
+      }
+    }
+  }
+}

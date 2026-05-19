@@ -1,0 +1,24 @@
+{
+  "samples": {
+    "success": {
+      "response": {
+        "status": 200,
+        "body": {
+          "key": "<redacted>",
+          "expires": 3600
+        }
+      }
+    },
+    "invalidPassword": {
+      "response": {
+        "status": 403,
+        "body": {
+          "message": "invalid password",
+          "context": {
+            "sharing_title": "Sample Sharing"
+          }
+        }
+      }
+    }
+  }
+}

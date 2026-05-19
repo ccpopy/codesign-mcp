@@ -1,0 +1,12 @@
+node_modules/
+dist/
+data/
+har/
+.codesign-mcp/
+.claude/
+.npm-cache/
+*.log
+.DS_Store
+.env
+.env.*
+!.env.example

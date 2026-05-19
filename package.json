@@ -1,0 +1,48 @@
+{
+  "name": "codesign-mcp",
+  "version": "0.1.0",
+  "description": "Local MCP server for Tencent CoDesign — read sharing artboards, specs, screenshots and slices.",
+  "type": "module",
+  "keywords": [
+    "mcp",
+    "codesign",
+    "tencent",
+    "design-to-code"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "dist/index.js",
+  "bin": {
+    "codesign-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "package.json"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node --test tests/config.test.mjs tests/parser.test.mjs tests/slices.test.mjs tests/url.test.mjs",
+    "prepack": "npm run build",
+    "install:browsers": "playwright install chromium"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.20.0",
+    "pino": "^9.5.0",
+    "playwright": "^1.50.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

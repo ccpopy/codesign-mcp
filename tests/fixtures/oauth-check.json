@@ -1,0 +1,11 @@
+{
+  "sample": {
+    "response": {
+      "body": {
+        "result": {
+          "status": "pending"
+        }
+      }
+    }
+  }
+}

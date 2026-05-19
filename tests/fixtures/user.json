@@ -1,0 +1,25 @@
+{
+  "samples": {
+    "unauthorized": {
+      "response": {
+        "status": 401,
+        "body": {
+          "message": "Unauthenticated"
+        }
+      }
+    },
+    "authorized": {
+      "response": {
+        "status": 200,
+        "body": {
+          "id": 400000001,
+          "uuid": "USER_UUID",
+          "display_name": "Sample User",
+          "has_password": true,
+          "profiles": [],
+          "workspace_team": null
+        }
+      }
+    }
+  }
+}
