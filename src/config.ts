@@ -1,9 +1,11 @@
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(here, '..');
+const PACKAGE_JSON_PATH = resolve(PACKAGE_ROOT, 'package.json');
 
 type PathSource = 'CODESIGN_WORKSPACE_DIR' | 'INIT_CWD' | 'process.cwd';
 
@@ -17,8 +19,17 @@ function resolveWorkspaceRoot(): { path: string; source: PathSource } {
   return { path: process.cwd(), source: 'process.cwd' };
 }
 
+function readPackageVersion(): string {
+  const parsed = JSON.parse(readFileSync(PACKAGE_JSON_PATH, 'utf8')) as { version?: unknown };
+  if (typeof parsed.version !== 'string' || parsed.version.length === 0) {
+    throw new Error(`Invalid package version in ${PACKAGE_JSON_PATH}`);
+  }
+  return parsed.version;
+}
+
 const workspace = resolveWorkspaceRoot();
 const WORKSPACE_ROOT = workspace.path;
+const PACKAGE_VERSION = readPackageVersion();
 const DATA_DIR = process.env.CODESIGN_DATA_DIR
   ? resolve(process.env.CODESIGN_DATA_DIR)
   : resolve(WORKSPACE_ROOT, '.codesign-mcp');
@@ -38,6 +49,7 @@ function envBool(name: string, fallback: boolean): boolean {
 
 export const config = {
   packageRoot: PACKAGE_ROOT,
+  packageVersion: PACKAGE_VERSION,
   workspaceRoot: WORKSPACE_ROOT,
   workspaceRootSource: workspace.source,
   projectRoot: WORKSPACE_ROOT,

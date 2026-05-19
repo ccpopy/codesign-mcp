@@ -29,9 +29,10 @@ export function registerStatusTool(server: McpServer): void {
       const browser = browserManager.snapshot();
 
       const status = {
-        version: '0.1.0',
+        version: config.packageVersion,
         config: {
           packageRoot: config.packageRoot,
+          packageVersion: config.packageVersion,
           workspaceRoot: config.workspaceRoot,
           workspaceRootSource: config.workspaceRootSource,
           dataDir: config.dataDir,

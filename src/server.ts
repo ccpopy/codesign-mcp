@@ -9,6 +9,7 @@ import { registerSlicesTool } from './tools/slices.js';
 import { registerDiagnosticsTool } from './tools/diagnostics.js';
 import { getLogger } from './logger.js';
 import { browserManager } from './browser/manager.js';
+import { config } from './config.js';
 
 const log = getLogger();
 
@@ -16,7 +17,7 @@ export function buildServer(): McpServer {
   const server = new McpServer(
     {
       name: 'codesign-mcp',
-      version: '0.1.0',
+      version: config.packageVersion,
     },
     {
       capabilities: {

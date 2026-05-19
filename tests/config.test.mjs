@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -9,18 +10,23 @@ import { config } from '../dist/config.js';
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const workspaceRoot = process.cwd();
 const configUrl = pathToFileURL(resolve(packageRoot, 'dist/config.js')).href;
+const packageJson = JSON.parse(readFileSync(resolve(packageRoot, 'package.json'), 'utf8'));
 
 function readConfigWithEnv(envPatch) {
   const env = { ...process.env, ...envPatch };
   for (const [key, value] of Object.entries(envPatch)) {
     if (value === undefined) delete env[key];
   }
-  const script = `import { config } from ${JSON.stringify(configUrl)}; console.log(JSON.stringify({ workspaceRoot: config.workspaceRoot, workspaceRootSource: config.workspaceRootSource, dataDir: config.dataDir, dataDirSource: config.dataDirSource }));`;
+  const script = `import { config } from ${JSON.stringify(configUrl)}; console.log(JSON.stringify({ packageVersion: config.packageVersion, workspaceRoot: config.workspaceRoot, workspaceRootSource: config.workspaceRootSource, dataDir: config.dataDir, dataDirSource: config.dataDirSource }));`;
   return JSON.parse(execFileSync(process.execPath, ['--input-type=module', '--eval', script], { cwd: packageRoot, env, encoding: 'utf8' }));
 }
 
 test('config projectRoot points at the package root', () => {
   assert.equal(config.packageRoot, packageRoot);
+});
+
+test('config packageVersion comes from package.json', () => {
+  assert.equal(config.packageVersion, packageJson.version);
 });
 
 test('config projectRoot points at the workspace root', () => {
