@@ -4,9 +4,21 @@ import { dirname } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(here, '..');
-const WORKSPACE_ROOT = process.env.CODESIGN_WORKSPACE_DIR
-  ? resolve(process.env.CODESIGN_WORKSPACE_DIR)
-  : process.cwd();
+
+type PathSource = 'CODESIGN_WORKSPACE_DIR' | 'INIT_CWD' | 'process.cwd';
+
+function resolveWorkspaceRoot(): { path: string; source: PathSource } {
+  if (process.env.CODESIGN_WORKSPACE_DIR) {
+    return { path: resolve(process.env.CODESIGN_WORKSPACE_DIR), source: 'CODESIGN_WORKSPACE_DIR' };
+  }
+  if (process.env.INIT_CWD) {
+    return { path: resolve(process.env.INIT_CWD), source: 'INIT_CWD' };
+  }
+  return { path: process.cwd(), source: 'process.cwd' };
+}
+
+const workspace = resolveWorkspaceRoot();
+const WORKSPACE_ROOT = workspace.path;
 const DATA_DIR = process.env.CODESIGN_DATA_DIR
   ? resolve(process.env.CODESIGN_DATA_DIR)
   : resolve(WORKSPACE_ROOT, '.codesign-mcp');
@@ -27,8 +39,10 @@ function envBool(name: string, fallback: boolean): boolean {
 export const config = {
   packageRoot: PACKAGE_ROOT,
   workspaceRoot: WORKSPACE_ROOT,
+  workspaceRootSource: workspace.source,
   projectRoot: WORKSPACE_ROOT,
   dataDir: DATA_DIR,
+  dataDirSource: process.env.CODESIGN_DATA_DIR ? 'CODESIGN_DATA_DIR' : 'workspace-default',
   profileDir: process.env.CODESIGN_PROFILE_DIR
     ? resolve(process.env.CODESIGN_PROFILE_DIR)
     : resolve(DATA_DIR, 'profile'),

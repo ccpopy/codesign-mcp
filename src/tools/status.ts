@@ -33,7 +33,9 @@ export function registerStatusTool(server: McpServer): void {
         config: {
           packageRoot: config.packageRoot,
           workspaceRoot: config.workspaceRoot,
+          workspaceRootSource: config.workspaceRootSource,
           dataDir: config.dataDir,
+          dataDirSource: config.dataDirSource,
           profileDir: config.profileDir,
           artifactsDir: config.artifactsDir,
           idleMs: config.idleMs,

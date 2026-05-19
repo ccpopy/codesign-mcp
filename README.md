@@ -30,29 +30,48 @@ codesign-mcp
 
 ## MCP Configuration
 
-For Claude/Codex-style MCP clients:
+For most MCP clients, use the zero-config form:
 
 ```json
 {
   "mcpServers": {
     "codesign-mcp": {
       "command": "npx",
-      "args": ["-y", "codesign-mcp"],
+      "args": ["-y", "codesign-mcp@latest"]
+    }
+  }
+}
+```
+
+The server detects its workspace in this order:
+
+1. `CODESIGN_WORKSPACE_DIR`
+2. `INIT_CWD`, which is normally the directory where `npx` was launched
+3. `process.cwd()`
+
+Runtime files are written under the detected workspace:
+
+```text
+<workspace>/.codesign-mcp/profile
+<workspace>/.codesign-mcp/artifacts
+<workspace>/.codesign-mcp/codesign-mcp.log
+```
+
+Use the `codesign_status` tool to inspect `workspaceRoot` and `workspaceRootSource`. If your MCP client launches servers from a global application directory instead of the project directory, set one of these explicitly:
+
+```json
+{
+  "mcpServers": {
+    "codesign-mcp": {
+      "command": "npx",
+      "args": ["-y", "codesign-mcp@latest"],
       "cwd": "F:/your-project"
     }
   }
 }
 ```
 
-`cwd` should be the project being implemented. Runtime files are written there by default:
-
-```text
-<cwd>/.codesign-mcp/profile
-<cwd>/.codesign-mcp/artifacts
-<cwd>/.codesign-mcp/codesign-mcp.log
-```
-
-If your MCP client cannot set `cwd`, configure:
+Or:
 
 ```text
 CODESIGN_WORKSPACE_DIR=F:/your-project
@@ -145,29 +164,48 @@ codesign-mcp
 
 ## MCP 配置
 
-Claude/Codex 类 MCP 客户端可以这样配置：
+大多数 MCP 客户端可以直接使用零配置写法：
 
 ```json
 {
   "mcpServers": {
     "codesign-mcp": {
       "command": "npx",
-      "args": ["-y", "codesign-mcp"],
+      "args": ["-y", "codesign-mcp@latest"]
+    }
+  }
+}
+```
+
+服务器会按这个顺序判断工作区：
+
+1. `CODESIGN_WORKSPACE_DIR`
+2. `INIT_CWD`，通常是启动 `npx` 时所在的目录
+3. `process.cwd()`
+
+运行数据会写入识别到的工作区：
+
+```text
+<workspace>/.codesign-mcp/profile
+<workspace>/.codesign-mcp/artifacts
+<workspace>/.codesign-mcp/codesign-mcp.log
+```
+
+可以通过 `codesign_status` 工具查看 `workspaceRoot` 和 `workspaceRootSource`。如果 MCP 客户端从全局应用目录启动服务器，而不是从项目目录启动，可以显式设置其中一种：
+
+```json
+{
+  "mcpServers": {
+    "codesign-mcp": {
+      "command": "npx",
+      "args": ["-y", "codesign-mcp@latest"],
       "cwd": "F:/your-project"
     }
   }
 }
 ```
 
-`cwd` 应该设置为当前要实现页面的项目目录。运行数据默认会写到：
-
-```text
-<cwd>/.codesign-mcp/profile
-<cwd>/.codesign-mcp/artifacts
-<cwd>/.codesign-mcp/codesign-mcp.log
-```
-
-如果 MCP 客户端不能设置 `cwd`，可以配置：
+或者：
 
 ```text
 CODESIGN_WORKSPACE_DIR=F:/your-project
