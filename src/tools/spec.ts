@@ -29,7 +29,8 @@ export function registerSpecTool(server: McpServer): void {
     {
       title: 'Get CoDesign Artboard Spec',
       description:
-        'Canonical CoDesign source for design-to-code: fetches the official meta_url JSON with layer positions, text, colors, CSS, groups, and slice manifest. ' +
+        'Canonical CoDesign source for design-to-code: fetches the official meta_url JSON with layer positions, text, fills, colors, CSS, groups, and slice manifest. ' +
+        'Returns raw CoDesign fields; when css and fills disagree, inspect both fields and the screenshot instead of assuming one is always authoritative. ' +
         'Use this before writing HTML/CSS from a CoDesign URL. Do not crop or OCR preview screenshots when this tool can return the spec. ' +
         'Selector precedence: screenId > objectId > screenName. Multiple screens without a selector return SCREEN_SELECTOR_REQUIRED with options. ' +
         'includeSlices defaults to true so available designer-exported slice metadata is returned with the spec.',
