@@ -1,16 +1,36 @@
 # codesign-mcp
 
-Local MCP server for Tencent CoDesign sharing links. It reads CoDesign sharing data, artboard specs, preview images, and designer-exported slices.
+English | [简体中文](#简体中文)
 
-## Usage
+Local MCP server for Tencent CoDesign sharing links. It exposes artboards, official layer specs, preview images, and designer-exported slices for design-to-code workflows.
 
-Install and run directly with npm:
+## Features
 
-```powershell
+- Read CoDesign sharing links through MCP tools.
+- List designs and artboards from a sharing URL.
+- Fetch official `meta_url` specs with layers, groups, text, colors, CSS, and coordinates.
+- Download designer-exported slice assets from the official slice manifest.
+- Keep login state in a persistent local Chromium profile.
+- Store runtime files in the caller workspace by default.
+
+## Installation
+
+Run directly with npm:
+
+```bash
 npx -y codesign-mcp
 ```
 
-For Claude/Codex-style MCP configuration, set the command to `npx` and pass the package name as args:
+Or install globally:
+
+```bash
+npm install -g codesign-mcp
+codesign-mcp
+```
+
+## MCP Configuration
+
+For Claude/Codex-style MCP clients:
 
 ```json
 {
@@ -24,7 +44,7 @@ For Claude/Codex-style MCP configuration, set the command to `npx` and pass the 
 }
 ```
 
-Runtime files are written to the caller workspace by default:
+`cwd` should be the project being implemented. Runtime files are written there by default:
 
 ```text
 <cwd>/.codesign-mcp/profile
@@ -32,10 +52,22 @@ Runtime files are written to the caller workspace by default:
 <cwd>/.codesign-mcp/codesign-mcp.log
 ```
 
-Override the workspace when the MCP client cannot set `cwd`:
+If your MCP client cannot set `cwd`, configure:
 
 ```text
 CODESIGN_WORKSPACE_DIR=F:/your-project
+```
+
+Optional environment variables:
+
+```text
+CODESIGN_DATA_DIR=F:/your-project/.codesign-mcp
+CODESIGN_PROFILE_DIR=F:/your-project/.codesign-mcp/profile
+CODESIGN_ARTIFACTS_DIR=F:/your-project/.codesign-mcp/artifacts
+CODESIGN_LOG_FILE=F:/your-project/.codesign-mcp/codesign-mcp.log
+CODESIGN_IDLE_MS=600000
+CODESIGN_KEEP_BROWSER=1
+CODESIGN_LOG_LEVEL=info
 ```
 
 ## Tools
@@ -49,11 +81,17 @@ CODESIGN_WORKSPACE_DIR=F:/your-project
 - `download_slice`: Download designer-exported slice assets from the official slice manifest.
 - `debug_collect_network`: Collect a redacted network summary for diagnosis.
 
-For design-to-code work, use `list_artboards`, then `get_artboard_spec`, then `download_slice` for assets. Preview screenshots are for comparison, not for production slicing.
+For design-to-code work, prefer this flow:
+
+```text
+list_artboards -> get_artboard_spec -> download_slice
+```
+
+Preview screenshots are for visual comparison, not for production slicing.
 
 ## Development
 
-```powershell
+```bash
 npm install
 npm test
 node scripts/stdio-smoke.mjs
@@ -65,7 +103,125 @@ This package is intended to be published from GitHub Actions using npm Trusted P
 
 Before first publish:
 
-1. Create or choose an npm package name or scope.
-2. Configure npm Trusted Publishing for the GitHub repository and `.github/workflows/publish.yml`.
-3. Enable 2FA on npm for account and publishing protection.
-4. Create a GitHub release to trigger publication.
+1. Configure npm Trusted Publishing for this GitHub repository and `.github/workflows/publish.yml`.
+2. Enable 2FA on npm for account and publishing protection.
+3. Create a GitHub release to trigger publication.
+
+## License
+
+MIT
+
+---
+
+## 简体中文
+
+[English](#codesign-mcp) | 简体中文
+
+面向腾讯 CoDesign 分享链接的本地 MCP 服务器。它为设计还原流程提供画板列表、官方图层标注、预览图以及设计师导出的切图资源。
+
+## 功能
+
+- 通过 MCP 工具读取 CoDesign 分享链接。
+- 从分享链接获取设计稿和画板列表。
+- 获取官方 `meta_url` 标注数据，包括图层、分组、文字、颜色、CSS 和坐标。
+- 从官方切图清单下载设计师导出的切图资源。
+- 使用本地 Chromium profile 持久化扫码登录态。
+- 默认把运行数据写入调用方项目目录。
+
+## 安装
+
+直接通过 npm 运行：
+
+```bash
+npx -y codesign-mcp
+```
+
+也可以全局安装：
+
+```bash
+npm install -g codesign-mcp
+codesign-mcp
+```
+
+## MCP 配置
+
+Claude/Codex 类 MCP 客户端可以这样配置：
+
+```json
+{
+  "mcpServers": {
+    "codesign-mcp": {
+      "command": "npx",
+      "args": ["-y", "codesign-mcp"],
+      "cwd": "F:/your-project"
+    }
+  }
+}
+```
+
+`cwd` 应该设置为当前要实现页面的项目目录。运行数据默认会写到：
+
+```text
+<cwd>/.codesign-mcp/profile
+<cwd>/.codesign-mcp/artifacts
+<cwd>/.codesign-mcp/codesign-mcp.log
+```
+
+如果 MCP 客户端不能设置 `cwd`，可以配置：
+
+```text
+CODESIGN_WORKSPACE_DIR=F:/your-project
+```
+
+可选环境变量：
+
+```text
+CODESIGN_DATA_DIR=F:/your-project/.codesign-mcp
+CODESIGN_PROFILE_DIR=F:/your-project/.codesign-mcp/profile
+CODESIGN_ARTIFACTS_DIR=F:/your-project/.codesign-mcp/artifacts
+CODESIGN_LOG_FILE=F:/your-project/.codesign-mcp/codesign-mcp.log
+CODESIGN_IDLE_MS=600000
+CODESIGN_KEEP_BROWSER=1
+CODESIGN_LOG_LEVEL=info
+```
+
+## 工具
+
+- `codesign_status`：查看运行路径、浏览器状态和 profile 状态。
+- `codesign_login`：打开可见 Chromium 窗口，用于扫码登录 CoDesign。
+- `codesign_logout`：清理持久化 profile。
+- `list_artboards`：把 CoDesign 分享链接解析为设计稿和画板列表。
+- `get_artboard_spec`：读取官方 CoDesign `meta_url` 标注数据，包括图层、文字、颜色、CSS、分组和切图元数据。
+- `get_artboard_image`：获取预览图或封面图，主要用于视觉对比。
+- `download_slice`：从官方切图清单下载设计师导出的切图资源。
+- `debug_collect_network`：收集脱敏后的网络摘要，用于诊断。
+
+设计还原建议优先使用：
+
+```text
+list_artboards -> get_artboard_spec -> download_slice
+```
+
+预览截图只适合做视觉对比，不应作为生产切图来源。
+
+## 开发
+
+```bash
+npm install
+npm test
+node scripts/stdio-smoke.mjs
+```
+
+## 发布
+
+建议通过 GitHub Actions 的 npm Trusted Publishing 发布。不要在仓库里保存长期有效的 npm token。
+
+首次发布前：
+
+1. 在 npm 上为这个 GitHub 仓库和 `.github/workflows/publish.yml` 配置 Trusted Publishing。
+2. 为 npm 账号开启 2FA。
+3. 创建 GitHub Release 触发发布。
+
+## 许可证
+
+MIT

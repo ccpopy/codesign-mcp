@@ -3,6 +3,15 @@
   "version": "0.1.0",
   "description": "Local MCP server for Tencent CoDesign — read sharing artboards, specs, screenshots and slices.",
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ccpopy/codesign-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ccpopy/codesign-mcp/issues"
+  },
+  "homepage": "https://github.com/ccpopy/codesign-mcp#readme",
   "keywords": [
     "mcp",
     "codesign",
@@ -19,6 +28,7 @@
   "files": [
     "dist",
     "README.md",
+    "LICENSE",
     "package.json"
   ],
   "publishConfig": {
