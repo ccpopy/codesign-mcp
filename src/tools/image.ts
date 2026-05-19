@@ -105,8 +105,16 @@ export function registerImageTool(server: McpServer): void {
               `${sharingId}/screens`,
               `${picked.id}-${variant}${guessExt(url, picked.image?.mime)}`,
               'META_FETCH_FAILED',
+              {
+                expectedBytes: picked.image?.size,
+              },
             );
-            result.download = { path: dl.path, bytes: dl.bytes, mime: dl.mime };
+            result.download = {
+              path: dl.path,
+              bytes: dl.bytes,
+              mime: dl.mime,
+              reusedExisting: dl.reusedExisting,
+            };
           } catch (err) {
             log.warn({ err: (err as Error).message }, 'image download failed');
             return errorResult(err);

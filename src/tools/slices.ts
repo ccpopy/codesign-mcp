@@ -126,6 +126,7 @@ export function registerSlicesTool(server: McpServer): void {
           path: string;
           bytes: number;
           mime: string | null;
+          reusedExisting?: boolean;
         }> = [];
         for (const e of filteredExportables) {
           const url = e.screenshot?.url;
@@ -143,6 +144,7 @@ export function registerSlicesTool(server: McpServer): void {
             {
               request: call.context.request,
               headers: SLICE_DOWNLOAD_HEADERS,
+              expectedBytes: e.screenshot?.length ?? e.screenshot?.size ?? e.size,
             },
           );
           downloads.push({
@@ -153,6 +155,7 @@ export function registerSlicesTool(server: McpServer): void {
             path: dl.path,
             bytes: dl.bytes,
             mime: dl.mime,
+            reusedExisting: dl.reusedExisting,
           });
         }
 
