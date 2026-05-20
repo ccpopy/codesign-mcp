@@ -108,6 +108,26 @@ list_artboards -> get_artboard_spec -> download_slice
 
 Preview screenshots are for visual comparison, not for production slicing.
 
+## Design-to-Code Workflow Prompt
+
+Before asking an Agent to implement a page from CoDesign, make sure the MCP server is connected. If the design requires login, call `codesign_status` first. When the profile does not exist or CoDesign is not logged in, call `codesign_login`, scan the QR code in the opened browser window, and then call `codesign_status` again to confirm the login state.
+
+Use this prompt template with your Agent. Replace `<PROJECT_ID>` with the value after `/s/` in the CoDesign sharing URL. If the sharing link does not require a password, remove the password line.
+
+```text
+Implement the column page from this CoDesign design:
+
+Link: https://codesign.qq.com/s/<PROJECT_ID>
+Password: <PASSWORD_IF_REQUIRED>
+
+Requirements:
+1. First call the codesign-mcp list_artboards tool to get the artboard list.
+2. Then call get_artboard_spec to get the official specification data.
+3. If the design contains designer-exported slice assets, prefer download_slice. Do not crop assets from the full-page preview image.
+4. Use preview images only for visual comparison, not as production asset sources.
+5. Implement the page in the column directory.
+```
+
 ## Development
 
 ```bash
@@ -241,6 +261,26 @@ list_artboards -> get_artboard_spec -> download_slice
 ```
 
 预览截图只适合做视觉对比，不应作为生产切图来源。
+
+## 设计还原流程提示词
+
+让 Agent 基于 CoDesign 实现页面前，请先确认 MCP 服务器已经连接。如果设计稿需要登录，先调用 `codesign_status`。当 profile 不存在或者 CoDesign 尚未登录时，调用 `codesign_login`，在打开的浏览器窗口中扫码登录，然后再次调用 `codesign_status` 确认登录状态。
+
+可以把下面的模板发给 Agent。将 `<PROJECT_ID>` 替换为 CoDesign 分享链接中 `/s/` 后面的项目 ID。如果分享链接不需要密码，删除密码这一行。
+
+```text
+请基于这个 CoDesign 设计稿实现栏目页面：
+
+链接：https://codesign.qq.com/s/<PROJECT_ID>
+密码：<PASSWORD_IF_REQUIRED>
+
+要求：
+1. 先调用 codesign-mcp 的 list_artboards 获取画板列表。
+2. 再调用 get_artboard_spec 获取官方标注信息。
+3. 如果设计稿里存在设计师导出的切图资源，优先调用 download_slice 获取，不要从整页预览图里自行裁图。
+4. 预览图只用于视觉对比，不作为生产切图来源。
+5. 在 column 目录中实现页面。
+```
 
 ## 开发
 
