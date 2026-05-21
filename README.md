@@ -1,5 +1,12 @@
 # codesign-mcp
 
+[![MCP Badge](https://lobehub.com/badge/mcp/ccpopy-codesign-mcp)](https://lobehub.com/mcp/ccpopy-codesign-mcp)
+[![npm version](https://img.shields.io/npm/v/codesign-mcp?label=npm&color=cb3837)](https://www.npmjs.com/package/codesign-mcp)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D20-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![MCP SDK](https://img.shields.io/badge/MCP%20SDK-%5E1.20.0-000000)](https://modelcontextprotocol.io/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 English | [简体中文](#简体中文)
 
 Local MCP server for Tencent CoDesign sharing links. It exposes artboards, official layer specs, preview images, and designer-exported slices for design-to-code workflows.
@@ -12,6 +19,7 @@ Local MCP server for Tencent CoDesign sharing links. It exposes artboards, offic
 - Download designer-exported slice assets from the official slice manifest.
 - Keep login state in a persistent local Chromium profile.
 - Store runtime files in the caller workspace by default.
+- Provide a reusable MCP prompt and read-only workflow resource for design-to-code tasks.
 
 ## Installation
 
@@ -100,6 +108,14 @@ CODESIGN_LOG_LEVEL=info
 - `download_slice`: Download designer-exported slice assets from the official slice manifest.
 - `debug_collect_network`: Collect a redacted network summary for diagnosis.
 
+## Prompts
+
+- `implement_codesign_page`: Generate a structured design-to-code prompt for a CoDesign sharing link. It guides an Agent to call `list_artboards`, `get_artboard_spec`, and `download_slice` in the intended order.
+
+## Resources
+
+- `codesign://workflow/design-to-code`: Read-only workflow guidance for using the MCP tools without cropping preview screenshots or fabricating unavailable CoDesign data.
+
 For design-to-code work, prefer this flow:
 
 ```text
@@ -144,7 +160,7 @@ Before first publish:
 
 1. Configure npm Trusted Publishing for this GitHub repository and `.github/workflows/publish.yml`.
 2. Enable 2FA on npm for account and publishing protection.
-3. Create a GitHub release to trigger publication.
+3. Create and push a version tag, for example `v0.1.7`, to trigger publication.
 
 ## License
 
@@ -166,6 +182,7 @@ MIT
 - 从官方切图清单下载设计师导出的切图资源。
 - 使用本地 Chromium profile 持久化扫码登录态。
 - 默认把运行数据写入调用方项目目录。
+- 提供可复用的 MCP 提示词和只读流程资源，服务于设计还原任务。
 
 ## 安装
 
@@ -254,6 +271,14 @@ CODESIGN_LOG_LEVEL=info
 - `download_slice`：从官方切图清单下载设计师导出的切图资源。
 - `debug_collect_network`：收集脱敏后的网络摘要，用于诊断。
 
+## 提示词
+
+- `implement_codesign_page`：为 CoDesign 分享链接生成结构化设计还原提示词，引导 Agent 按预期顺序调用 `list_artboards`、`get_artboard_spec` 和 `download_slice`。
+
+## 资源
+
+- `codesign://workflow/design-to-code`：只读流程说明，用于指导 MCP 工具的正确组合方式，避免裁剪预览图或伪造不可用的 CoDesign 数据。
+
 设计还原建议优先使用：
 
 ```text
@@ -298,7 +323,7 @@ node scripts/stdio-smoke.mjs
 
 1. 在 npm 上为这个 GitHub 仓库和 `.github/workflows/publish.yml` 配置 Trusted Publishing。
 2. 为 npm 账号开启 2FA。
-3. 创建 GitHub Release 触发发布。
+3. 创建并推送版本标签，例如 `v0.1.7`，触发发布。
 
 ## 许可证
 

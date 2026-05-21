@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.7 - 2026-05-21
+
+### Added
+
+- Added the `implement_codesign_page` MCP prompt for the documented CoDesign design-to-code workflow.
+- Added the `codesign://workflow/design-to-code` read-only MCP resource for workflow guidance.
+- Extended the stdio smoke test to verify tools, prompts, and resources.
+- Added README badges for LobeHub, npm, Node.js, TypeScript, MCP SDK, and license metadata.
+
 ## 0.1.6 - 2026-05-19
 
 ### Changed

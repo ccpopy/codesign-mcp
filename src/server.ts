@@ -7,6 +7,8 @@ import { registerSpecTool } from './tools/spec.js';
 import { registerImageTool } from './tools/image.js';
 import { registerSlicesTool } from './tools/slices.js';
 import { registerDiagnosticsTool } from './tools/diagnostics.js';
+import { registerDesignToCodePrompt } from './prompts/design-to-code.js';
+import { registerWorkflowResource } from './resources/workflow.js';
 import { getLogger } from './logger.js';
 import { browserManager } from './browser/manager.js';
 import { config } from './config.js';
@@ -22,6 +24,8 @@ export function buildServer(): McpServer {
     {
       capabilities: {
         tools: {},
+        prompts: {},
+        resources: {},
         logging: {},
       },
     },
@@ -34,6 +38,8 @@ export function buildServer(): McpServer {
   registerImageTool(server);
   registerSlicesTool(server);
   registerDiagnosticsTool(server);
+  registerDesignToCodePrompt(server);
+  registerWorkflowResource(server);
 
   return server;
 }
