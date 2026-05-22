@@ -185,10 +185,10 @@ function deriveFilename(url: string): string {
     const last = basename(u.pathname);
     if (last && extname(last)) return last;
     const ext = extname(last) || '';
-    const hash = createHash('sha1').update(url).digest('hex').slice(0, 12);
+    const hash = createHash('sha256').update(url).digest('hex').slice(0, 12);
     return `${hash}${ext || '.bin'}`;
   } catch {
-    const hash = createHash('sha1').update(url).digest('hex').slice(0, 12);
+    const hash = createHash('sha256').update(url).digest('hex').slice(0, 12);
     return `${hash}.bin`;
   }
 }

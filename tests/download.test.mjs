@@ -100,6 +100,22 @@ test('downloadToArtifact rejects a filename that escapes its artifact subdir', a
   assert.equal(request.calls(), 0);
 });
 
+test('downloadToArtifact derives fallback filenames with SHA-256', async () => {
+  const subdir = `${testSubdir}/derived-name`;
+  const request = fakeRequest('new!');
+  const result = await downloadToArtifact(
+    'https://cdn4.codesign.qq.com/assets/download',
+    subdir,
+    undefined,
+    'SLICE_FETCH_FAILED',
+    { request },
+  );
+
+  assert.equal(request.calls(), 1);
+  assert.equal(result.path, resolve(config.artifactsDir, subdir, '0e397c6af95c.bin'));
+  assert.equal(readFileSync(result.path, 'utf8'), 'new!');
+});
+
 function fakeRequest(body) {
   let callCount = 0;
   return {
