@@ -1,6 +1,5 @@
 # codesign-mcp
 
-[![MCP Badge](https://lobehub.com/badge/mcp/ccpopy-codesign-mcp)](https://lobehub.com/mcp/ccpopy-codesign-mcp)
 [![npm version](https://img.shields.io/npm/v/codesign-mcp?label=npm&color=cb3837)](https://www.npmjs.com/package/codesign-mcp)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D20-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
