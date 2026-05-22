@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '../mcp/server.js';
 
 export const DESIGN_TO_CODE_WORKFLOW_URI = 'codesign://workflow/design-to-code';
 

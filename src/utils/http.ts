@@ -1,8 +1,10 @@
-// 用 page.evaluate 的方式发同源请求（带 cookies）。
-// 单独抽出来便于复用和后续替换实现。
+// 用 Playwright BrowserContext 绑定的 APIRequestContext 发请求。
+// 它复用浏览器上下文 cookie，避免在页面里动态执行 fetch。
 
-import type { Page } from 'playwright';
+import type { APIRequestContext } from 'playwright';
 import { CodesignError } from '../codesign/errors.js';
+import { config } from '../config.js';
+import { assertCodesignOriginUrl } from './url.js';
 
 export interface SameOriginRequest {
   url: string;
@@ -17,58 +19,44 @@ export interface SameOriginResponse<T = unknown> {
   rawText?: string;
 }
 
-interface EvaluateResponse {
-  status: number;
-  body: unknown;
-  rawText?: string;
-  fetchError?: string;
-}
-
 export async function requestJson<T = unknown>(
-  page: Page,
+  request: APIRequestContext,
   req: SameOriginRequest,
 ): Promise<SameOriginResponse<T>> {
-  const result = await page.evaluate(
-    async ({ url, method, headers, body }) => {
-      const init: RequestInit = {
-        method: method ?? 'GET',
-        credentials: 'include',
-        headers: { Accept: 'application/json', ...(headers ?? {}) },
-      };
-      if (body !== undefined) {
-        (init.headers as Record<string, string>)['Content-Type'] = 'application/json;charset=UTF-8';
-        init.body = JSON.stringify(body);
-      }
-      try {
-        const r = await fetch(url, init);
-        const text = await r.text();
-        let parsed: unknown;
-        try {
-          parsed = text ? JSON.parse(text) : null;
-        } catch {
-          parsed = undefined;
-        }
-        return { status: r.status, body: parsed, rawText: text };
-      } catch (e: unknown) {
-        return {
-          status: 0,
-          body: null,
-          rawText: undefined,
-          fetchError: e instanceof Error ? e.message : String(e),
-        };
-      }
-    },
-    {
-      url: req.url,
+  assertCodesignOriginUrl(req.url, 'same-origin request', config.origin);
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+    ...(req.headers ?? {}),
+  };
+  if (req.body !== undefined) {
+    headers['Content-Type'] = 'application/json;charset=UTF-8';
+  }
+
+  try {
+    const response = await request.fetch(req.url, {
       method: req.method ?? 'GET',
-      headers: req.headers ?? {},
-      body: req.body,
-    },
-  ) as EvaluateResponse;
-  if (result.fetchError) {
-    throw new CodesignError('SHARING_FETCH_FAILED', `same-origin request failed: ${result.fetchError}`, {
+      headers,
+      data: req.body === undefined ? undefined : JSON.stringify(req.body),
+      timeout: config.apiTimeoutMs,
+    });
+    const rawText = await response.text();
+    return {
+      status: response.status(),
+      body: parseJsonBody(rawText) as T,
+      rawText,
+    };
+  } catch (err) {
+    throw new CodesignError('SHARING_FETCH_FAILED', `same-origin request failed: ${(err as Error).message}`, {
       url: req.url,
     });
   }
-  return result as SameOriginResponse<T>;
+}
+
+function parseJsonBody(text: string): unknown {
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return undefined;
+  }
 }

@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '../mcp/server.js';
+import { objectSchema } from '../mcp/schema.js';
 import type { Page, Request, Response } from 'playwright';
 import { browserManager } from '../browser/manager.js';
 import { getSharingDetail } from '../codesign/sharing.js';
@@ -26,13 +26,24 @@ interface NetworkRecord {
   errorMessage?: string;
 }
 
-const inputSchema = {
-  sharingUrl: z.string().min(1),
-  password: z.string().optional(),
-  timeoutMs: z.number().int().min(1_000).max(60_000).optional().default(15_000),
-  includeHeaders: z.boolean().optional().default(false),
-  maxBodyKeyDepth: z.number().int().min(0).max(3).optional().default(0),
-} as const;
+interface DiagnosticsInput {
+  sharingUrl: string;
+  password?: string;
+  timeoutMs: number;
+  includeHeaders: boolean;
+  maxBodyKeyDepth: number;
+}
+
+const inputSchema = objectSchema(
+  {
+    sharingUrl: { type: 'string', minLength: 1 },
+    password: { type: 'string' },
+    timeoutMs: { type: 'integer', minimum: 1_000, maximum: 60_000, default: 15_000 },
+    includeHeaders: { type: 'boolean', default: false },
+    maxBodyKeyDepth: { type: 'integer', minimum: 0, maximum: 3, default: 0 },
+  },
+  ['sharingUrl'],
+);
 
 export function registerDiagnosticsTool(server: McpServer): void {
   server.registerTool(
@@ -42,12 +53,12 @@ export function registerDiagnosticsTool(server: McpServer): void {
       description:
         'Open the sharing page in a headless browser, record all network responses for `timeoutMs`, and return a REDACTED summary. ' +
         'Use this to discover unknown endpoints or to debug why a tool fails. ' +
-        'Output never contains Cookie, Authorization, password, state-key values, or response bodies — only top-level JSON keys.',
+        'Output never contains Cookie, Authorization, password, state-key values, or response bodies — only JSON key paths.',
       inputSchema,
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
     },
-    async (args) => {
-      const { sharingUrl, password, timeoutMs, includeHeaders } = args;
+    async (args: DiagnosticsInput) => {
+      const { sharingUrl, password, timeoutMs, includeHeaders, maxBodyKeyDepth } = args;
       let sharingId: string;
       try {
         sharingId = parseSharingId(sharingUrl);
@@ -94,10 +105,10 @@ export function registerDiagnosticsTool(server: McpServer): void {
               const parsed = JSON.parse(text);
               if (Array.isArray(parsed)) {
                 bodyKind = 'array';
-                bodyTopKeys = parsed.length > 0 ? topLevelKeys(parsed[0]) : [];
+                bodyTopKeys = parsed.length > 0 ? topLevelKeys(parsed[0], maxBodyKeyDepth) : [];
               } else if (parsed && typeof parsed === 'object') {
                 bodyKind = 'object';
-                bodyTopKeys = topLevelKeys(parsed);
+                bodyTopKeys = topLevelKeys(parsed, maxBodyKeyDepth);
               } else {
                 bodyKind = 'text';
               }
@@ -166,7 +177,7 @@ export function registerDiagnosticsTool(server: McpServer): void {
         const summary = summarizeRecords(finishedResponses);
 
         return ok({
-          sharingId,
+          sharingId: 'SHARING_ID',
           timeoutMs,
           recordedCount: finishedResponses.length,
           inFlightAtEnd: records.size,

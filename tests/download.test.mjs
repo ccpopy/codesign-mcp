@@ -23,7 +23,7 @@ test('downloadToArtifact reuses an existing artifact when expectedBytes matches'
 
   const request = fakeRequest('must-not-fetch');
   const result = await downloadToArtifact(
-    'https://example.test/asset.bin',
+    'https://cdn4.codesign.qq.com/asset.bin',
     subdir,
     'asset.bin',
     'SLICE_FETCH_FAILED',
@@ -47,7 +47,7 @@ test('downloadToArtifact overwrites an existing artifact when expectedBytes diff
 
   const request = fakeRequest('new!');
   const result = await downloadToArtifact(
-    'https://example.test/asset.bin',
+    'https://cdn4.codesign.qq.com/asset.bin',
     subdir,
     'asset.bin',
     'SLICE_FETCH_FAILED',
@@ -66,7 +66,7 @@ test('downloadToArtifact rejects a subdir that escapes artifactsDir', async () =
   const request = fakeRequest('must-not-fetch');
   await assert.rejects(
     () => downloadToArtifact(
-      'https://example.test/asset.bin',
+      'https://cdn4.codesign.qq.com/asset.bin',
       '../outside-artifacts',
       'asset.bin',
       'SLICE_FETCH_FAILED',
@@ -85,7 +85,7 @@ test('downloadToArtifact rejects a filename that escapes its artifact subdir', a
   const request = fakeRequest('must-not-fetch');
   await assert.rejects(
     () => downloadToArtifact(
-      'https://example.test/asset.bin',
+      'https://cdn4.codesign.qq.com/asset.bin',
       `${testSubdir}/escape`,
       '../asset.bin',
       'SLICE_FETCH_FAILED',

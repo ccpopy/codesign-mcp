@@ -17,7 +17,7 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "declaration": false,
-    "sourceMap": true,
+    "sourceMap": false,
     "isolatedModules": true,
     "verbatimModuleSyntax": false
   },

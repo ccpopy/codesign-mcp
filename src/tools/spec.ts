@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '../mcp/server.js';
+import { objectSchema } from '../mcp/schema.js';
 import { browserManager } from '../browser/manager.js';
 import { getSharingDetail } from '../codesign/sharing.js';
 import { fetchMetaJson } from '../codesign/meta.js';
@@ -13,15 +13,31 @@ import type { SharingScreen, SpecObject } from '../codesign/types.js';
 
 const log = getLogger();
 
-const inputSchema = {
-  sharingUrl: z.string().min(1),
-  password: z.string().optional(),
-  screenId: z.union([z.number().int(), z.string()]).optional(),
-  objectId: z.string().optional(),
-  screenName: z.string().optional(),
-  layerObjectId: z.string().optional().describe('Optional: return only the matching layer'),
-  includeSlices: z.boolean().optional().default(true),
-} as const;
+interface SpecInput {
+  sharingUrl: string;
+  password?: string;
+  screenId?: number | string;
+  objectId?: string;
+  screenName?: string;
+  layerObjectId?: string;
+  includeSlices: boolean;
+}
+
+const inputSchema = objectSchema(
+  {
+    sharingUrl: { type: 'string', minLength: 1 },
+    password: { type: 'string' },
+    screenId: { anyOf: [{ type: 'integer' }, { type: 'string' }] },
+    objectId: { type: 'string' },
+    screenName: { type: 'string' },
+    layerObjectId: {
+      type: 'string',
+      description: 'Optional: return only the matching layer',
+    },
+    includeSlices: { type: 'boolean', default: true },
+  },
+  ['sharingUrl'],
+);
 
 export function registerSpecTool(server: McpServer): void {
   server.registerTool(
@@ -37,7 +53,7 @@ export function registerSpecTool(server: McpServer): void {
       inputSchema,
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
     },
-    async (args) => {
+    async (args: SpecInput) => {
       const { sharingUrl, password, screenId, objectId, screenName, layerObjectId, includeSlices } = args;
       let sharingId: string;
       try {

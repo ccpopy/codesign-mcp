@@ -18,10 +18,9 @@ export interface SessionProbe {
   raw?: unknown;
 }
 
-// 在已建立的 page 中调用 /api/user。
-// 注意：依赖 page 已经导航到 codesign.qq.com 同源页面，否则没有 cookie 上下文。
+// 在已建立的浏览器上下文中调用 /api/user。
+// BrowserContext.request 复用同一个上下文 cookie，不需要在页面里执行脚本。
 export async function probeLoggedIn(page: Page): Promise<SessionProbe> {
-  // 确保 page 在同源上
   const currentUrl = page.url();
   if (!currentUrl.startsWith(config.origin)) {
     log.debug({ currentUrl }, 'navigating to home before probe');
@@ -31,27 +30,20 @@ export async function probeLoggedIn(page: Page): Promise<SessionProbe> {
     });
   }
 
-  const resp = await page.evaluate(async (origin: string) => {
-    try {
-      const r = await fetch(
-        `${origin}/api/user?include=profiles&appends=is_company_admin,is_company_member,is_company_guest,has_password,watermark_settings`,
-        {
-          method: 'GET',
-          credentials: 'include',
-          headers: { Accept: 'application/json' },
-        },
-      );
-      let body: unknown = null;
-      try {
-        body = await r.json();
-      } catch {
-        /* ignore */
-      }
-      return { status: r.status, body };
-    } catch (e: unknown) {
-      return { status: 0, body: { error: (e as Error).message } };
-    }
-  }, config.origin);
+  const r = await page.context().request.get(
+    `${config.origin}/api/user?include=profiles&appends=is_company_admin,is_company_member,is_company_guest,has_password,watermark_settings`,
+    {
+      headers: { Accept: 'application/json' },
+      timeout: config.apiTimeoutMs,
+    },
+  );
+  let body: unknown = null;
+  try {
+    body = await r.json();
+  } catch {
+    /* ignore */
+  }
+  const resp = { status: r.status(), body };
 
   if (resp.status === 200 && resp.body && typeof resp.body === 'object') {
     const body = resp.body as Record<string, unknown>;

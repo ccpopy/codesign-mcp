@@ -1,8 +1,6 @@
 import { config } from '../config.js';
-import { getLogger } from '../logger.js';
 import { CodesignError } from './errors.js';
-
-const log = getLogger();
+import { assertAllowedRemoteUrl, normalizeCodesignAssetUrl } from '../utils/url.js';
 
 // CDN 资源在 HAR 中无 cookie 依赖，可直接 Node fetch。
 // 加一个 User-Agent 避免被 CDN 防火墙误判。
@@ -16,16 +14,15 @@ export async function fetchMetaJson<T = unknown>(url: string): Promise<T> {
   if (!url || typeof url !== 'string') {
     throw new CodesignError('META_FETCH_FAILED', 'meta url is empty');
   }
-  if (!config.cdnHostPattern.test(url) && !url.startsWith(config.origin)) {
-    log.warn({ url }, 'meta url not on a recognized host, fetching anyway');
-  }
+  const remoteUrl = normalizeCodesignAssetUrl(url);
+  assertAllowedRemoteUrl(remoteUrl, 'meta');
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), config.metaTimeoutMs);
   try {
-    const resp = await fetch(url, { headers: DEFAULT_HEADERS, signal: controller.signal });
+    const resp = await fetch(remoteUrl, { headers: DEFAULT_HEADERS, signal: controller.signal });
     if (!resp.ok) {
       throw new CodesignError('META_FETCH_FAILED', `meta fetch failed: HTTP ${resp.status}`, {
-        url,
+        url: remoteUrl,
         status: resp.status,
       });
     }
@@ -34,7 +31,7 @@ export async function fetchMetaJson<T = unknown>(url: string): Promise<T> {
       return JSON.parse(text) as T;
     } catch (err) {
       throw new CodesignError('META_SCHEMA_MISMATCH', 'meta body is not valid JSON', {
-        url,
+        url: remoteUrl,
         snippet: text.slice(0, 200),
         parseError: (err as Error).message,
       });
@@ -42,7 +39,7 @@ export async function fetchMetaJson<T = unknown>(url: string): Promise<T> {
   } catch (err) {
     if (err instanceof CodesignError) throw err;
     throw new CodesignError('META_FETCH_FAILED', `meta fetch threw: ${(err as Error).message}`, {
-      url,
+      url: remoteUrl,
     });
   } finally {
     clearTimeout(timer);

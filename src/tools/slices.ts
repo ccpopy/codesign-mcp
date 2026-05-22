@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '../mcp/server.js';
+import { objectSchema } from '../mcp/schema.js';
 import { browserManager } from '../browser/manager.js';
 import { getSharingDetail } from '../codesign/sharing.js';
 import { fetchSliceManifest, findSliceByObjectId } from '../codesign/slices.js';
@@ -18,16 +18,41 @@ const SLICE_DOWNLOAD_HEADERS = {
   Referer: 'https://codesign.qq.com/',
 };
 
-const inputSchema = {
-  sharingUrl: z.string().min(1),
-  password: z.string().optional(),
-  screenId: z.union([z.number().int(), z.string()]).optional(),
-  objectId: z.string().optional(),
-  screenName: z.string().optional(),
-  layerObjectId: z.string().min(1).describe('object_id of the slice layer'),
-  format: z.string().optional().describe('Filter exportables by format (png, jpg, svg, etc.)'),
-  scales: z.array(z.number()).optional().describe('Filter exportables by scale list, e.g. [1, 2]'),
-} as const;
+interface SlicesInput {
+  sharingUrl: string;
+  password?: string;
+  screenId?: number | string;
+  objectId?: string;
+  screenName?: string;
+  layerObjectId: string;
+  format?: string;
+  scales?: number[];
+}
+
+const inputSchema = objectSchema(
+  {
+    sharingUrl: { type: 'string', minLength: 1 },
+    password: { type: 'string' },
+    screenId: { anyOf: [{ type: 'integer' }, { type: 'string' }] },
+    objectId: { type: 'string' },
+    screenName: { type: 'string' },
+    layerObjectId: {
+      type: 'string',
+      minLength: 1,
+      description: 'object_id of the slice layer',
+    },
+    format: {
+      type: 'string',
+      description: 'Filter exportables by format (png, jpg, svg, etc.)',
+    },
+    scales: {
+      type: 'array',
+      items: { type: 'number' },
+      description: 'Filter exportables by scale list, e.g. [1, 2]',
+    },
+  },
+  ['sharingUrl', 'layerObjectId'],
+);
 
 export function registerSlicesTool(server: McpServer): void {
   server.registerTool(
@@ -41,7 +66,7 @@ export function registerSlicesTool(server: McpServer): void {
       inputSchema,
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
     },
-    async (args) => {
+    async (args: SlicesInput) => {
       const { sharingUrl, password, screenId, objectId, screenName, layerObjectId, format, scales } = args;
       let sharingId: string;
       try {

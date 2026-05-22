@@ -43,11 +43,74 @@ export function normalizeCodesignAssetUrl(
 
   if (
     /^codesign-\d+\.cos(?:\.[a-z0-9-]+)*\.myqcloud\.com$/i.test(source.hostname) &&
-    source.pathname.startsWith('/screen-slices/')
+    isCodesignCosAssetPath(source.pathname)
   ) {
     const cdn = new URL(cdnOrigin);
     return `${cdn.origin}${source.pathname}${source.search}`;
   }
 
   return input;
+}
+
+export function assertCodesignOriginUrl(
+  input: string,
+  purpose: string,
+  origin = 'https://codesign.qq.com',
+): string {
+  let url: URL;
+  let allowedOrigin: URL;
+  try {
+    url = new URL(input);
+    allowedOrigin = new URL(origin);
+  } catch {
+    throw new CodesignError('REMOTE_URL_NOT_ALLOWED', `${purpose} url is not a valid URL`, {
+      url: input,
+    });
+  }
+
+  if (url.origin === allowedOrigin.origin) return input;
+
+  throw new CodesignError('REMOTE_URL_NOT_ALLOWED', `${purpose} url must stay on CoDesign origin`, {
+    url: input,
+    origin: url.origin,
+    allowedOrigin: allowedOrigin.origin,
+  });
+}
+
+export function assertAllowedRemoteUrl(input: string, purpose: string): string {
+  let url: URL;
+  try {
+    url = new URL(input);
+  } catch {
+    throw new CodesignError('REMOTE_URL_NOT_ALLOWED', `${purpose} url is not a valid URL`, {
+      url: input,
+    });
+  }
+
+  if (url.protocol !== 'https:') {
+    throw new CodesignError('REMOTE_URL_NOT_ALLOWED', `${purpose} url must use https`, {
+      url: input,
+      protocol: url.protocol,
+    });
+  }
+
+  if (isAllowedCodesignHost(url.hostname)) return input;
+
+  throw new CodesignError('REMOTE_URL_NOT_ALLOWED', `${purpose} url host is not allowed`, {
+    url: input,
+    host: url.hostname,
+    allowedHosts: ['codesign.qq.com', 'cdn*.codesign.qq.com'],
+  });
+}
+
+export function isAllowedCodesignHost(hostname: string): boolean {
+  return hostname === 'codesign.qq.com' || /^cdn\d*\.codesign\.qq\.com$/i.test(hostname);
+}
+
+function isCodesignCosAssetPath(pathname: string): boolean {
+  return (
+    pathname.startsWith('/screen-slices/') ||
+    pathname.startsWith('/screens/') ||
+    pathname.startsWith('/meta/')
+  );
 }

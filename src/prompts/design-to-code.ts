@@ -1,12 +1,35 @@
-import { z } from 'zod';
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '../mcp/server.js';
+import { objectSchema } from '../mcp/schema.js';
 
-const argsSchema = {
-  sharingUrl: z.string().min(1).describe('CoDesign sharing URL or bare sharing id.'),
-  password: z.string().optional().describe('Sharing password, if the CoDesign link requires one.'),
-  artboardName: z.string().optional().describe('Preferred artboard or screen name, if the user already knows it.'),
-  outputDir: z.string().optional().describe('Target implementation directory, if the user provided one.'),
-} as const;
+interface DesignToCodePromptInput {
+  sharingUrl: string;
+  password?: string;
+  artboardName?: string;
+  outputDir?: string;
+}
+
+const argsSchema = objectSchema(
+  {
+    sharingUrl: {
+      type: 'string',
+      minLength: 1,
+      description: 'CoDesign sharing URL or bare sharing id.',
+    },
+    password: {
+      type: 'string',
+      description: 'Sharing password, if the CoDesign link requires one.',
+    },
+    artboardName: {
+      type: 'string',
+      description: 'Preferred artboard or screen name, if the user already knows it.',
+    },
+    outputDir: {
+      type: 'string',
+      description: 'Target implementation directory, if the user provided one.',
+    },
+  },
+  ['sharingUrl'],
+);
 
 export function registerDesignToCodePrompt(server: McpServer): void {
   server.registerPrompt(
@@ -17,7 +40,7 @@ export function registerDesignToCodePrompt(server: McpServer): void {
         'Generate a design-to-code workflow prompt that uses list_artboards, get_artboard_spec, and download_slice in order.',
       argsSchema,
     },
-    async ({ sharingUrl, password, artboardName, outputDir }) => ({
+    async ({ sharingUrl, password, artboardName, outputDir }: DesignToCodePromptInput) => ({
       messages: [
         {
           role: 'user',

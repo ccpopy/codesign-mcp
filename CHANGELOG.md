@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.1.8 - 2026-05-22
+
+### Security
+
+- Removed runtime dependencies on the MCP SDK, Pino, and Zod to reduce third-party supply-chain exposure.
+- Replaced in-page dynamic fetch calls with Playwright API request calls guarded by CoDesign same-origin checks.
+- Added remote asset allowlisting and CoDesign COS-to-CDN normalization for meta, screen, and slice downloads.
+- Hardened `codesign_logout` so it only clears the configured profile directory, not arbitrary children of a broad data directory.
+- Expanded `debug_collect_network` redaction for sharing IDs, account/team IDs, sensitive headers, query values, CDN path tokens, and response bodies.
+
+### Changed
+
+- Added a small local MCP stdio implementation and JSON schema validator for the server's current tool, prompt, and resource surface.
+- Replaced Pino with a local JSON-lines file logger.
+- Disabled source map output and excluded generated source maps from published package contents.
+
+### Fixed
+
+- `prompts/get` now reports invalid prompt arguments as JSON-RPC invalid params instead of internal server errors.
+- Diagnostic response summaries now preserve useful request shape while hiding sensitive values.
+
+### Tests
+
+- Added coverage for profile deletion safety, diagnostic redaction, same-origin request blocking, and MCP prompt argument validation.
+
 ## 0.1.7 - 2026-05-21
 
 ### Added

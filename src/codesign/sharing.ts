@@ -20,7 +20,7 @@ export async function exchangePassword(
   password: string,
 ): Promise<StateKeyResultOk> {
   await ensureOnOrigin(page, sharingId);
-  const resp = await requestJson<StateKeyResponse | { message?: string }>(page, {
+  const resp = await requestJson<StateKeyResponse | { message?: string }>(page.context().request, {
     method: 'POST',
     url: `${config.origin}/api/sharings/${sharingId}/state-keys`,
     body: { password },
@@ -57,7 +57,7 @@ export async function fetchSharingDetail(
   await ensureOnOrigin(page, sharingId);
   const headers: Record<string, string> = {};
   if (stateKey) headers['state-key'] = stateKey;
-  const resp = await requestJson<SharingDetail | { message?: string; context?: unknown }>(page, {
+  const resp = await requestJson<SharingDetail | { message?: string; context?: unknown }>(page.context().request, {
     url: `${config.origin}/api/sharings/${sharingId}`,
     headers,
   });

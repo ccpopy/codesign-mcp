@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '../mcp/server.js';
+import { objectSchema } from '../mcp/schema.js';
 import { browserManager } from '../browser/manager.js';
 import { getSharingDetail } from '../codesign/sharing.js';
 import { CodesignError } from '../codesign/errors.js';
@@ -12,15 +12,28 @@ import type { SharingScreen } from '../codesign/types.js';
 
 const log = getLogger();
 
-const inputSchema = {
-  sharingUrl: z.string().min(1),
-  password: z.string().optional(),
-  screenId: z.union([z.number().int(), z.string()]).optional(),
-  objectId: z.string().optional(),
-  screenName: z.string().optional(),
-  variant: z.enum(['full', 'cover']).optional().default('full'),
-  download: z.boolean().optional().default(false),
-} as const;
+interface ImageInput {
+  sharingUrl: string;
+  password?: string;
+  screenId?: number | string;
+  objectId?: string;
+  screenName?: string;
+  variant: 'full' | 'cover';
+  download: boolean;
+}
+
+const inputSchema = objectSchema(
+  {
+    sharingUrl: { type: 'string', minLength: 1 },
+    password: { type: 'string' },
+    screenId: { anyOf: [{ type: 'integer' }, { type: 'string' }] },
+    objectId: { type: 'string' },
+    screenName: { type: 'string' },
+    variant: { type: 'string', enum: ['full', 'cover'], default: 'full' },
+    download: { type: 'boolean', default: false },
+  },
+  ['sharingUrl'],
+);
 
 export function registerImageTool(server: McpServer): void {
   server.registerTool(
@@ -33,7 +46,7 @@ export function registerImageTool(server: McpServer): void {
         'When download=true, stores the image under <workspaceRoot>/.codesign-mcp/artifacts/<sharingId>/screens/. Selector precedence: screenId > objectId > screenName.',
       inputSchema,
     },
-    async (args) => {
+    async (args: ImageInput) => {
       const { sharingUrl, password, screenId, objectId, screenName, variant, download } = args;
       let sharingId: string;
       try {

@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import type { APIRequestContext } from 'playwright';
 import { config } from '../config.js';
 import { CodesignError } from '../codesign/errors.js';
+import { assertAllowedRemoteUrl, normalizeCodesignAssetUrl } from './url.js';
 
 const DEFAULT_HEADERS: Record<string, string> = {
   'User-Agent':
@@ -36,6 +37,8 @@ export async function downloadToArtifact(
   errorCode: 'SLICE_FETCH_FAILED' | 'META_FETCH_FAILED' = 'SLICE_FETCH_FAILED',
   options: DownloadOptions = {},
 ): Promise<DownloadResult> {
+  const remoteUrl = normalizeCodesignAssetUrl(url);
+  assertAllowedRemoteUrl(remoteUrl, 'download');
   const targetDir = resolveInside(config.artifactsDir, subdir);
   mkdirSync(targetDir, { recursive: true });
 
@@ -60,18 +63,18 @@ export async function downloadToArtifact(
   try {
     const headers = { ...DEFAULT_HEADERS, ...options.headers };
     const resp = options.request
-      ? await fetchWithBrowserContext(options.request, url, headers)
-      : await fetchWithNode(url, headers, controller.signal);
+      ? await fetchWithBrowserContext(options.request, remoteUrl, headers)
+      : await fetchWithNode(remoteUrl, headers, controller.signal);
     if (!resp.ok) {
       throw new CodesignError(errorCode, `download failed: HTTP ${resp.status}`, {
-        url,
+        url: remoteUrl,
         status: resp.status,
       });
     }
     const buf = resp.body;
     const writeAttempts = await commitArtifactWithRetry(finalPath, buf);
     return {
-      url,
+      url: remoteUrl,
       path: finalPath,
       bytes: buf.byteLength,
       mime: resp.mime,
@@ -80,7 +83,7 @@ export async function downloadToArtifact(
   } catch (err) {
     if (err instanceof CodesignError) throw err;
     throw new CodesignError(errorCode, `download threw: ${(err as Error).message}`, {
-      url,
+      url: remoteUrl,
       path: finalPath,
     });
   } finally {

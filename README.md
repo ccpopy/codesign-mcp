@@ -2,8 +2,8 @@
 
 [![npm version](https://img.shields.io/npm/v/codesign-mcp?label=npm&color=cb3837)](https://www.npmjs.com/package/codesign-mcp)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D20-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![MCP SDK](https://img.shields.io/badge/MCP%20SDK-%5E1.20.0-000000)](https://modelcontextprotocol.io/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![MCP](https://img.shields.io/badge/MCP-stdio-000000)](https://modelcontextprotocol.io/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 English | [简体中文](#简体中文)
@@ -106,6 +106,12 @@ CODESIGN_LOG_LEVEL=info
 - `get_artboard_image`: Fetch preview or cover images for visual comparison.
 - `download_slice`: Download designer-exported slice assets from the official slice manifest.
 - `debug_collect_network`: Collect a redacted network summary for diagnosis.
+
+## Security Notes
+
+Remote metadata and artifact downloads are restricted to `https://codesign.qq.com` and `https://cdn*.codesign.qq.com`. Unsupported hosts fail explicitly with `REMOTE_URL_NOT_ALLOWED`.
+
+`codesign_logout` only clears a profile directory inside the configured runtime directory. Unsafe profile paths fail explicitly with `PROFILE_DIR_UNSAFE`.
 
 ## Prompts
 
@@ -269,6 +275,12 @@ CODESIGN_LOG_LEVEL=info
 - `get_artboard_image`：获取预览图或封面图，主要用于视觉对比。
 - `download_slice`：从官方切图清单下载设计师导出的切图资源。
 - `debug_collect_network`：收集脱敏后的网络摘要，用于诊断。
+
+## 安全说明
+
+远程标注数据和资源下载仅允许访问 `https://codesign.qq.com` 与 `https://cdn*.codesign.qq.com`。不支持的远程主机会明确返回 `REMOTE_URL_NOT_ALLOWED`。
+
+`codesign_logout` 只会清理位于运行目录内的 profile 目录。不安全的 profile 路径会明确返回 `PROFILE_DIR_UNSAFE`。
 
 ## 提示词
 

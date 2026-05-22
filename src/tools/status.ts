@@ -1,10 +1,10 @@
 import { existsSync, statSync } from 'node:fs';
-import { z } from 'zod';
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '../mcp/server.js';
+import { objectSchema } from '../mcp/schema.js';
 import { config } from '../config.js';
 import { browserManager } from '../browser/manager.js';
 
-const inputSchema = {} as const;
+const inputSchema = objectSchema({});
 
 export function registerStatusTool(server: McpServer): void {
   server.registerTool(
@@ -63,6 +63,3 @@ export function registerStatusTool(server: McpServer): void {
     },
   );
 }
-
-// 类型导出便于客户端/测试引用
-export type StatusInput = z.infer<z.ZodObject<typeof inputSchema>>;

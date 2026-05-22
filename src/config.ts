@@ -85,7 +85,6 @@ export const config = {
   keepBrowser: envBool('CODESIGN_KEEP_BROWSER', false),
   origin: 'https://codesign.qq.com',
   homePath: '/app/design',
-  cdnHostPattern: /^https:\/\/cdn\d?\.codesign\.qq\.com\//,
   navTimeoutMs: envInt('CODESIGN_NAV_TIMEOUT_MS', 30_000),
   apiTimeoutMs: envInt('CODESIGN_API_TIMEOUT_MS', 20_000),
   metaTimeoutMs: envInt('CODESIGN_META_TIMEOUT_MS', 30_000),

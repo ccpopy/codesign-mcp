@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '../mcp/server.js';
+import { objectSchema } from '../mcp/schema.js';
 import { browserManager } from '../browser/manager.js';
 import { getSharingDetail } from '../codesign/sharing.js';
 import { CodesignError, isCodesignError } from '../codesign/errors.js';
@@ -8,10 +8,25 @@ import { getLogger } from '../logger.js';
 
 const log = getLogger();
 
-const inputSchema = {
-  sharingUrl: z.string().min(1).describe('CoDesign sharing URL (https://codesign.qq.com/app/s/<id>) or bare sharing id'),
-  password: z.string().optional().describe('Sharing password if required'),
-} as const;
+interface ArtboardsInput {
+  sharingUrl: string;
+  password?: string;
+}
+
+const inputSchema = objectSchema(
+  {
+    sharingUrl: {
+      type: 'string',
+      minLength: 1,
+      description: 'CoDesign sharing URL (https://codesign.qq.com/app/s/<id>) or bare sharing id',
+    },
+    password: {
+      type: 'string',
+      description: 'Sharing password if required',
+    },
+  },
+  ['sharingUrl'],
+);
 
 export function registerArtboardsTool(server: McpServer): void {
   server.registerTool(
@@ -25,7 +40,7 @@ export function registerArtboardsTool(server: McpServer): void {
       inputSchema,
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
     },
-    async ({ sharingUrl, password }) => {
+    async ({ sharingUrl, password }: ArtboardsInput) => {
       let sharingId: string;
       try {
         sharingId = parseSharingId(sharingUrl);
