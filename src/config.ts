@@ -80,6 +80,7 @@ export const config = {
   logFile: process.env.CODESIGN_LOG_FILE
     ? resolve(process.env.CODESIGN_LOG_FILE)
     : resolve(DATA_DIR, 'codesign-mcp.log'),
+  logFileSource: process.env.CODESIGN_LOG_FILE ? 'CODESIGN_LOG_FILE' : 'data-dir-default',
   logLevel: envLogLevel('CODESIGN_LOG_LEVEL', 'info'),
   idleMs: envInt('CODESIGN_IDLE_MS', 10 * 60 * 1000),
   keepBrowser: envBool('CODESIGN_KEEP_BROWSER', false),

@@ -48,7 +48,7 @@ export function registerStatusTool(server: McpServer): void {
         },
         browser,
         notes:
-          'Runtime files default to <workspaceRoot>/.codesign-mcp. Login state is persisted in profileDir. CoDesign design-to-code tasks should use list_artboards, get_artboard_spec, and download_slice instead of cropping preview screenshots.',
+          'Runtime files default to <workspaceRoot>/.codesign-mcp and are created only when a tool needs local state or artifacts. Login state is persisted in profileDir. CoDesign design-to-code tasks should use list_artboards, get_artboard_spec, and download_slice instead of cropping preview screenshots.',
       };
 
       return {

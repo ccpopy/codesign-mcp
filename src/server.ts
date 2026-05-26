@@ -46,7 +46,7 @@ export function buildServer(): McpServer {
 export async function startStdio(): Promise<void> {
   const server = buildServer();
   const transport = new StdioServerTransport();
-  log.info('starting stdio MCP server');
+  log.debug('starting stdio MCP server');
   await server.connect(transport);
 
   const shutdown = async (signal: string) => {

@@ -64,6 +64,13 @@ Runtime files are written under the detected workspace:
 <workspace>/.codesign-mcp/codesign-mcp.log
 ```
 
+The default runtime directory is not created when the MCP server merely starts,
+lists tools, or serves prompts/resources. It is created only when a tool needs
+local state or artifacts, such as `codesign_login`, browser-backed CoDesign
+reads, or downloads. Before that happens, default file logs go to stderr.
+If `CODESIGN_LOG_FILE` is set explicitly, the server treats that path as an
+explicit logging request and creates its parent directory when writing logs.
+
 Use the `codesign_status` tool to inspect `workspaceRoot` and `workspaceRootSource`. If your MCP client launches servers from a global application directory instead of the project directory, set one of these explicitly:
 
 ```json
@@ -232,6 +239,12 @@ codesign-mcp
 <workspace>/.codesign-mcp/artifacts
 <workspace>/.codesign-mcp/codesign-mcp.log
 ```
+
+MCP 服务仅启动、列出工具或读取提示词/资源时，不会创建默认运行目录。
+只有工具确实需要本地状态或产物时才会创建，例如 `codesign_login`、
+需要浏览器访问 CoDesign 的读取工具，或下载资源工具。在此之前，默认文件
+日志会写到 stderr。如果显式设置了 `CODESIGN_LOG_FILE`，服务会把它视为
+明确的日志写入请求，并在写日志时创建对应父目录。
 
 可以通过 `codesign_status` 工具查看 `workspaceRoot` 和 `workspaceRootSource`。如果 MCP 客户端从全局应用目录启动服务器，而不是从项目目录启动，可以显式设置其中一种：
 

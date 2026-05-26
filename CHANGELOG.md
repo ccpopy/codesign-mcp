@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.9 - 2026-05-26
+
+### Fixed
+
+- Delayed creation of the default `.codesign-mcp` runtime directory until a tool actually needs local state or artifacts.
+- Kept default startup logging from creating the runtime directory while still honoring an explicit `CODESIGN_LOG_FILE`.
+
+### Tests
+
+- Added startup coverage to ensure server initialization does not create the default runtime directory.
+
 ## 0.1.8 - 2026-05-22
 
 ### Security

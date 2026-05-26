@@ -1,4 +1,4 @@
-import { appendFileSync, mkdirSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { config } from './config.js';
 
@@ -25,7 +25,6 @@ let _logger: Logger | undefined;
 
 export function getLogger(): Logger {
   if (_logger) return _logger;
-  mkdirSync(dirname(config.logFile), { recursive: true });
   _logger = createFileLogger();
   return _logger;
 }
@@ -43,7 +42,13 @@ function createFileLogger(): Logger {
 function writeLog(level: LogLevel, args: unknown[]): void {
   if (LEVEL_SEVERITY[level] < LEVEL_SEVERITY[config.logLevel]) return;
   const entry = normalizeLogEntry(level, args);
-  appendFileSync(config.logFile, `${JSON.stringify(entry)}\n`, 'utf8');
+  const logDir = dirname(config.logFile);
+  if (config.logFileSource === 'CODESIGN_LOG_FILE' || existsSync(logDir)) {
+    mkdirSync(logDir, { recursive: true });
+    appendFileSync(config.logFile, `${JSON.stringify(entry)}\n`, 'utf8');
+    return;
+  }
+  process.stderr.write(`${JSON.stringify(entry)}\n`);
 }
 
 function normalizeLogEntry(level: LogLevel, args: unknown[]): Record<string, unknown> {
