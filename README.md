@@ -151,9 +151,10 @@ Password: <PASSWORD_IF_REQUIRED>
 Requirements:
 1. First call the codesign-mcp list_artboards tool to get the artboard list.
 2. Then call get_artboard_spec to get the official specification data.
-3. If the design contains designer-exported slice assets, prefer download_slice. Do not crop assets from the full-page preview image.
-4. Use preview images only for visual comparison, not as production asset sources.
-5. Implement the page in the column directory.
+3. Translate the coordinates into semantic page structure and normal document flow before coding. Use Flexbox/Grid for page layout; do not recreate the whole page as globally absolute-positioned layers.
+4. If the design contains designer-exported slice assets, prefer download_slice. Do not crop assets from the full-page preview image.
+5. Use preview images only for visual comparison, not as production asset sources.
+6. Implement the page in the column directory.
 ```
 
 ## Development
@@ -326,9 +327,10 @@ list_artboards -> get_artboard_spec -> download_slice
 要求：
 1. 先调用 codesign-mcp 的 list_artboards 获取画板列表。
 2. 再调用 get_artboard_spec 获取官方标注信息。
-3. 如果设计稿里存在设计师导出的切图资源，优先调用 download_slice 获取，不要从整页预览图里自行裁图。
-4. 预览图只用于视觉对比，不作为生产切图来源。
-5. 在 column 目录中实现页面。
+3. 先把坐标信息转译为语义化页面结构和正常文档流，再开始编码。页面布局优先使用 Flexbox/Grid，不要把整页还原成全局绝对定位图层。
+4. 如果设计稿里存在设计师导出的切图资源，优先调用 download_slice 获取，不要从整页预览图里自行裁图。
+5. 预览图只用于视觉对比，不作为生产切图来源。
+6. 在 column 目录中实现页面。
 ```
 
 ## 开发

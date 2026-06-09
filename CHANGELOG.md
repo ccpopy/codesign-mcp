@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.10 - 2026-06-09
+
+### Fixed
+
+- Updated the CoDesign design-to-code prompt and workflow guidance to require semantic page structure and normal document flow before coding.
+- Clarified that Flexbox/Grid should be preferred for page layout, with absolute or fixed positioning reserved for local overlays or intentionally overlapping elements.
+
 ## 0.1.9 - 2026-05-26
 
 ### Fixed
