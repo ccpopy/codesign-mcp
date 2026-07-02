@@ -109,7 +109,7 @@ CODESIGN_LOG_LEVEL=info
 - `codesign_login`: Open a visible Chromium window for CoDesign QR-code login.
 - `codesign_logout`: Clear the persisted profile.
 - `list_artboards`: Resolve a CoDesign sharing URL into designs and artboards.
-- `get_artboard_spec`: Fetch official CoDesign `meta_url` specs with layers, text, colors, CSS, groups, and slice metadata.
+- `get_artboard_spec`: Fetch official CoDesign `meta_url` specs with layers, text, colors, CSS, groups, and slice metadata. Optional `targetPlatform` accepts natural-language platform names such as `web`, `Android`, `安卓`, `iOS`, `微信小程序`, or `mini program` and returns `spec.platformSpec` with normalized platform id, units, converted rects, unit-adjusted CSS, and conversion metadata. Optional `targetUnit`, `customScale`, `customWidth`, and `remBasePx` mirror CoDesign's platform settings; for example, a 1440 px target width with rem output and `1rem = 100px` maps to `targetPlatform: "web"`, `targetUnit: "rem"`, `customWidth: 1440`, and `remBasePx: 100`.
 - `get_artboard_image`: Fetch preview or cover images for visual comparison.
 - `download_slice`: Download designer-exported slice assets from the official slice manifest.
 - `debug_collect_network`: Collect a redacted network summary for diagnosis.
@@ -150,7 +150,7 @@ Password: <PASSWORD_IF_REQUIRED>
 
 Requirements:
 1. First call the codesign-mcp list_artboards tool to get the artboard list.
-2. Then call get_artboard_spec to get the official specification data.
+2. Then call get_artboard_spec to get the official specification data. If the target platform is known, pass it as targetPlatform, for example `Android`, `iOS`, or `微信小程序`. If the user specifies custom platform settings, also pass targetUnit, customScale, customWidth, and remBasePx.
 3. Translate the coordinates into semantic page structure and normal document flow before coding. Use Flexbox/Grid for page layout; do not recreate the whole page as globally absolute-positioned layers.
 4. If the design contains designer-exported slice assets, prefer download_slice. Do not crop assets from the full-page preview image.
 5. Use preview images only for visual comparison, not as production asset sources.
@@ -285,7 +285,7 @@ CODESIGN_LOG_LEVEL=info
 - `codesign_login`：打开可见 Chromium 窗口，用于扫码登录 CoDesign。
 - `codesign_logout`：清理持久化 profile。
 - `list_artboards`：把 CoDesign 分享链接解析为设计稿和画板列表。
-- `get_artboard_spec`：读取官方 CoDesign `meta_url` 标注数据，包括图层、文字、颜色、CSS、分组和切图元数据。
+- `get_artboard_spec`：读取官方 CoDesign `meta_url` 标注数据，包括图层、文字、颜色、CSS、分组和切图元数据。可选的 `targetPlatform` 支持 `web`、`Android`、`安卓`、`iOS`、`微信小程序`、`mini program` 等自然语言平台名称，并返回 `spec.platformSpec`，其中包含标准平台 ID、单位、转换后的坐标、单位调整后的 CSS 和转换元数据。可选的 `targetUnit`、`customScale`、`customWidth`、`remBasePx` 对应 CoDesign 的平台设置；例如目标宽度 1440 px、输出 rem 且 `1rem = 100px`，应传 `targetPlatform: "web"`、`targetUnit: "rem"`、`customWidth: 1440`、`remBasePx: 100`。
 - `get_artboard_image`：获取预览图或封面图，主要用于视觉对比。
 - `download_slice`：从官方切图清单下载设计师导出的切图资源。
 - `debug_collect_network`：收集脱敏后的网络摘要，用于诊断。
@@ -326,7 +326,7 @@ list_artboards -> get_artboard_spec -> download_slice
 
 要求：
 1. 先调用 codesign-mcp 的 list_artboards 获取画板列表。
-2. 再调用 get_artboard_spec 获取官方标注信息。
+2. 再调用 get_artboard_spec 获取官方标注信息。如果已知目标开发平台，把它作为 targetPlatform 传入，例如 `Android`、`iOS` 或 `微信小程序`。如果用户指定了自定义平台设置，同时传入 targetUnit、customScale、customWidth 和 remBasePx。
 3. 先把坐标信息转译为语义化页面结构和正常文档流，再开始编码。页面布局优先使用 Flexbox/Grid，不要把整页还原成全局绝对定位图层。
 4. 如果设计稿里存在设计师导出的切图资源，优先调用 download_slice 获取，不要从整页预览图里自行裁图。
 5. 预览图只用于视觉对比，不作为生产切图来源。

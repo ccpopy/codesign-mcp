@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.0 - 2026-07-02
+
+### Added
+
+- Added `targetPlatform` support to `get_artboard_spec` for natural-language platform names such as `web`, `Android`, `安卓`, `iOS`, `微信小程序`, and `mini program`.
+- Added platform presentation metadata under `spec.platformSpec`, including normalized platform id, units, converted rects, unit-adjusted CSS, and conversion details.
+- Added CoDesign-style custom platform settings with `targetUnit`, `customScale`, `customWidth`, and `remBasePx`, including rem conversion for target-width workflows.
+- Updated the design-to-code prompt and workflow resource so agents pass platform, unit, custom width, custom scale, and rem base settings when users provide them in natural language.
+
+### Tests
+
+- Added platform alias, unit conversion, custom width, rem base, and invalid platform coverage.
+- Verified the real CoDesign sharing link flow with the fuzzy request "设计稿目标宽度 1440px，单位用 rem".
+
 ## 0.1.10 - 2026-06-09
 
 ### Fixed

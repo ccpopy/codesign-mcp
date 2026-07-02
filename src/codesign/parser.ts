@@ -1,6 +1,7 @@
 import { CodesignError } from './errors.js';
 import type {
   NormalizedSpec,
+  PlatformSpec,
   SliceManifest,
   SpecLayer,
   SpecObject,
@@ -30,8 +31,12 @@ export function assertSpecObject(raw: unknown): asserts raw is SpecObject {
   }
 }
 
-export function normalizeSpec(spec: SpecObject, slices: SliceManifest = []): NormalizedSpec {
-  return {
+export function normalizeSpec(
+  spec: SpecObject,
+  slices: SliceManifest = [],
+  platformSpec?: PlatformSpec,
+): NormalizedSpec {
+  const normalized: NormalizedSpec = {
     artboard: {
       objectId: spec.object_id,
       name: spec.name,
@@ -46,6 +51,8 @@ export function normalizeSpec(spec: SpecObject, slices: SliceManifest = []): Nor
     css: Array.isArray(spec.css) ? spec.css : spec.css ? [spec.css] : [],
     slices,
   };
+  if (platformSpec) normalized.platformSpec = platformSpec;
+  return normalized;
 }
 
 // 按 objectId 在 layers + groups 中查找。

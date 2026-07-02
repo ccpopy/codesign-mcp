@@ -95,6 +95,57 @@ export interface SpecObject {
   css?: string[];
 }
 
+export type TargetPlatformId = 'raw' | 'web' | 'android' | 'ios' | 'wechat-miniprogram' | 'other';
+
+export interface PlatformRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  unit: string;
+}
+
+export interface PlatformLayer {
+  objectId: string;
+  name: string;
+  type: string;
+  rect: PlatformRect;
+  css?: string[];
+}
+
+export interface PlatformSpec {
+  requested: string;
+  id: TargetPlatformId;
+  label: string;
+  unit: string;
+  scale: number;
+  conversion: {
+    mode: 'default' | 'custom-scale' | 'custom-width';
+    sourceWidth: number;
+    customScale?: number;
+    customWidth?: number;
+    remBasePx?: number;
+    remBasePxSource?: 'default' | 'explicit';
+  };
+  availableUnits: string[];
+  availableScales: number[];
+  source: {
+    kind: 'codesign-meta-url';
+    note: string;
+  };
+  artboard: {
+    objectId: string;
+    name: string;
+    width: number;
+    height: number;
+    unit: string;
+    rect: PlatformRect;
+  };
+  layers: PlatformLayer[];
+  groups: PlatformLayer[];
+  css: string[];
+}
+
 // Slice manifest 数组元素
 export interface SliceExportableScreenshot {
   object_id: string;
@@ -147,4 +198,5 @@ export interface NormalizedSpec {
   groups: SpecLayer[];
   css: string[];
   slices: SliceManifestItem[];
+  platformSpec?: PlatformSpec;
 }
