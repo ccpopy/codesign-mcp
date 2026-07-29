@@ -2,7 +2,7 @@
 // @name         CoDesign AI 选区复制
 // @name:en      CoDesign Copy AI Selection
 // @namespace    https://github.com/ccpopy/codesign-mcp
-// @version      0.1.0
+// @version      0.1.1
 // @description  将当前 CoDesign 画板和图层选区复制为 codesign-mcp 可使用的 Agent 提示词。
 // @description:en Copy the current CoDesign screen and layer selection as a codesign-mcp Agent prompt.
 // @author       codesign-mcp contributors
@@ -26,7 +26,10 @@
   const SELECTORS = Object.freeze({
     inspectorHeaders: 'aside.screen-inspector .node-box__header',
     inspectorAction: ':scope > .node-box__btn',
+    inspectorTitle: '.node-box__header--title, .node-box__header--left',
     activeScreen: '.board-screen-list__item.active[data-id]',
+    selectedCanvasLayer:
+      '.selected.layer[data-object-id][data-layer-name]:not(.orange-dash-rect)',
     activeLayerWrapper: '.custom-tree__node-wrapper.active',
     activeLayerNode: ':scope > .custom-tree__node[id^="id-"]',
   });
@@ -41,7 +44,7 @@
     childList: true,
     subtree: true,
     attributes: true,
-    attributeFilter: ['class', 'data-id', 'id', 'title'],
+    attributeFilter: ['class', 'data-id', 'data-layer-name', 'data-object-id', 'id', 'title'],
   });
   window.addEventListener('popstate', scheduleRefresh);
   window.addEventListener('hashchange', scheduleRefresh);
@@ -56,9 +59,7 @@
   }
 
   function refreshButton() {
-    const header = Array.from(document.querySelectorAll(SELECTORS.inspectorHeaders)).find((item) =>
-      item.querySelector(SELECTORS.inspectorAction),
-    );
+    const header = findInspectorHeader();
     if (!header) return;
 
     let button = document.getElementById(BUTTON_ID);
@@ -73,12 +74,12 @@
     if (nativeAction) header.insertBefore(button, nativeAction);
     else if (button.parentElement !== header) header.append(button);
 
-    const selection = readSelection(false);
+    const selection = readSelection(false, header);
     const disabled = selection == null;
     if (button.disabled !== disabled) button.disabled = disabled;
     const title = selection
       ? `复制 ${selection.screenName} / ${selection.layerName} 的 AI 选区提示词`
-      : '请先在 CoDesign 图层面板中选中一个图层或分组';
+      : '请先在 CoDesign 画布或图层面板中选中一个图层或分组';
     if (button.title !== title) button.title = title;
     if (button.getAttribute('aria-label') !== title) button.setAttribute('aria-label', title);
   }
@@ -96,48 +97,97 @@
     }
   }
 
-  function readSelection(required) {
+  function readSelection(required, inspectorHeader = findInspectorHeader()) {
     const screenElements = document.querySelectorAll(SELECTORS.activeScreen);
-    const layerWrappers = document.querySelectorAll(SELECTORS.activeLayerWrapper);
 
-    if (screenElements.length !== 1 || layerWrappers.length !== 1) {
+    if (screenElements.length !== 1 || !inspectorHeader) {
       if (!required) return null;
       throw new Error(
-        `无法确定唯一选区：找到 ${screenElements.length} 个当前画板、${layerWrappers.length} 个当前图层。`,
+        `无法确定唯一选区：找到 ${screenElements.length} 个当前画板，右侧标注面板${inspectorHeader ? '已找到' : '未找到'}。`,
       );
     }
 
     const screenElement = screenElements[0];
-    const layerWrapper = layerWrappers[0];
-    const layerNodes = layerWrapper.querySelectorAll(SELECTORS.activeLayerNode);
-    if (layerNodes.length !== 1) {
-      if (!required) return null;
-      throw new Error(`无法读取选中图层 ID：找到 ${layerNodes.length} 个候选节点。`);
-    }
-
     const screenId = screenElement.getAttribute('data-id');
     const screenName = readRequiredLabel(screenElement, '当前画板');
-    const layerNodeId = layerNodes[0].id;
-    const layerObjectId = layerNodeId.startsWith('id-') ? layerNodeId.slice(3) : '';
-    const layerName = readRequiredLabel(layerWrapper, '当前图层');
+    const layerName = readRequiredLabel(
+      inspectorHeader.querySelector(SELECTORS.inspectorTitle),
+      '当前图层',
+    );
+    const layerReference = readLayerReference(layerName, required);
+    if (!layerReference) return null;
     const sharingUrl = readSharingUrl();
 
     if (!screenId) throw new Error('当前画板缺少 data-id，无法生成 AI 选区引用。');
-    if (!layerObjectId) throw new Error('当前图层缺少 object_id，无法生成 AI 选区引用。');
 
     return {
       type: 'codesign-selection',
       sharingUrl,
       screenId,
       screenName,
-      layerObjectId,
+      layerObjectId: layerReference.objectId,
       layerName,
       selectionScope: SELECTION_SCOPE,
     };
   }
 
+  function findInspectorHeader() {
+    return Array.from(document.querySelectorAll(SELECTORS.inspectorHeaders)).find((item) =>
+      item.querySelector(SELECTORS.inspectorAction),
+    );
+  }
+
+  function readLayerReference(layerName, required) {
+    const canvasReferences = uniqueLayerReferences(
+      Array.from(document.querySelectorAll(SELECTORS.selectedCanvasLayer))
+        .filter(
+          (element) =>
+            readLabel(element) === layerName && getComputedStyle(element).display !== 'none',
+        )
+        .map((element) => ({
+          objectId: (element.getAttribute('data-object-id') || '').trim(),
+          name: readLabel(element),
+        })),
+    );
+    if (canvasReferences.length === 1) return canvasReferences[0];
+
+    const treeReferences = uniqueLayerReferences(
+      Array.from(document.querySelectorAll(SELECTORS.activeLayerWrapper))
+        .filter((wrapper) => readLabel(wrapper) === layerName)
+        .flatMap((wrapper) =>
+          Array.from(wrapper.querySelectorAll(SELECTORS.activeLayerNode)).map((node) => ({
+            objectId: node.id.startsWith('id-') ? node.id.slice(3) : '',
+            name: readLabel(wrapper),
+          })),
+        ),
+    );
+    if (treeReferences.length === 1) return treeReferences[0];
+
+    if (!required) return null;
+    throw new Error(
+      `无法读取当前图层 ID：画布候选 ${canvasReferences.length} 个、与右侧标注一致的图层树候选 ${treeReferences.length} 个。请重新选择图层。`,
+    );
+  }
+
+  function uniqueLayerReferences(references) {
+    const unique = new Map();
+    for (const reference of references) {
+      if (reference.objectId) unique.set(reference.objectId, reference);
+    }
+    return Array.from(unique.values());
+  }
+
+  function readLabel(element) {
+    return (
+      element?.getAttribute('data-layer-name') ||
+      element?.getAttribute('title') ||
+      element?.textContent ||
+      ''
+    ).trim();
+  }
+
   function readRequiredLabel(element, label) {
-    const value = (element.getAttribute('title') || element.textContent || '').trim();
+    const value = readLabel(element);
     if (!value) throw new Error(`${label}缺少可读名称，无法生成 AI 选区引用。`);
     return value;
   }
