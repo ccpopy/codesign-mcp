@@ -6,11 +6,17 @@ import { fetchMetaJson } from '../codesign/meta.js';
 import { fetchSliceManifest } from '../codesign/slices.js';
 import { assertSpecObject, normalizeSpec, findLayerByObjectId } from '../codesign/parser.js';
 import { buildPlatformSpec, supportedTargetPlatforms } from '../codesign/platform.js';
+import {
+  buildLayerSelection,
+  LAYER_SELECTION_SCOPES,
+  type LayerSelection,
+  type LayerSelectionScope,
+} from '../codesign/selection.js';
 import { CodesignError } from '../codesign/errors.js';
 import { parseSharingId } from '../utils/url.js';
 import { errorResult } from './artboards.js';
 import { getLogger } from '../logger.js';
-import type { SharingScreen, SpecObject } from '../codesign/types.js';
+import type { PlatformSpec, SharingScreen, SpecObject } from '../codesign/types.js';
 
 const log = getLogger();
 
@@ -21,6 +27,7 @@ interface SpecInput {
   objectId?: string;
   screenName?: string;
   layerObjectId?: string;
+  selectionScope: LayerSelectionScope;
   targetPlatform?: string;
   targetUnit?: string;
   customScale?: number;
@@ -38,7 +45,14 @@ const inputSchema = objectSchema(
     screenName: { type: 'string' },
     layerObjectId: {
       type: 'string',
-      description: 'Optional: return only the matching layer',
+      description: 'Optional object_id of the selected CoDesign layer or group.',
+    },
+    selectionScope: {
+      type: 'string',
+      enum: [...LAYER_SELECTION_SCOPES],
+      default: 'layer',
+      description:
+        'Selection scope used with layerObjectId: layer returns the matching node, subtree adds strict descendants, and region returns all non-ancestor nodes fully contained by the selected bounds.',
     },
     targetPlatform: {
       type: 'string',
@@ -84,6 +98,7 @@ export function registerSpecTool(server: McpServer): void {
         'If targetPlatform is provided in natural language, also returns platformSpec with normalized platform id, unit, converted rects, and unit-adjusted CSS. targetUnit, customScale, customWidth, and remBasePx mirror CoDesign platform settings. ' +
         'Use this before writing HTML/CSS from a CoDesign URL. Do not crop or OCR preview screenshots when this tool can return the spec. ' +
         'Selector precedence: screenId > objectId > screenName. Multiple screens without a selector return SCREEN_SELECTOR_REQUIRED with options. ' +
+        'When layerObjectId is provided, selectionScope=layer preserves the single-node response, subtree returns the strict child hierarchy, and region returns the complete visual area inside the selected bounds with relative coordinates. ' +
         'includeSlices defaults to true so available designer-exported slice metadata is returned with the spec.',
       inputSchema,
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
@@ -96,6 +111,7 @@ export function registerSpecTool(server: McpServer): void {
         objectId,
         screenName,
         layerObjectId,
+        selectionScope,
         targetPlatform,
         targetUnit,
         customScale,
@@ -108,6 +124,16 @@ export function registerSpecTool(server: McpServer): void {
         sharingId = parseSharingId(sharingUrl);
       } catch (err) {
         return errorResult(err);
+      }
+
+      if (!layerObjectId && selectionScope !== 'layer') {
+        return errorResult(
+          new CodesignError(
+            'INVALID_SELECTION',
+            'layerObjectId is required when selectionScope is subtree or region',
+            { selectionScope },
+          ),
+        );
       }
 
       const call = await browserManager.acquireHeadless();
@@ -190,7 +216,8 @@ export function registerSpecTool(server: McpServer): void {
 
         if (layerObjectId) {
           const layer = findLayerByObjectId(normalized, layerObjectId);
-          if (!layer) {
+          const selection = buildLayerSelection(normalized, layerObjectId, selectionScope);
+          if (!layer || !selection) {
             return errorResult(
               new CodesignError('SCREEN_NOT_FOUND', 'layer not found by objectId', {
                 layerObjectId,
@@ -202,8 +229,12 @@ export function registerSpecTool(server: McpServer): void {
             sharingId,
             screen: { id: picked.id, objectId: picked.object_id, name: picked.name },
             layer,
+            selection,
             platformLayer: platformSpec
               ? [...platformSpec.layers, ...platformSpec.groups].find((l) => l.objectId === layerObjectId)
+              : undefined,
+            platformSelection: platformSpec
+              ? buildPlatformSelection(platformSpec, selection)
               : undefined,
             platform: platformSpec
               ? {
@@ -284,4 +315,25 @@ function ok(payload: Record<string, unknown>) {
 function errMsg(err: unknown): string {
   if (err instanceof Error) return err.message;
   return String(err);
+}
+
+function buildPlatformSelection(platformSpec: PlatformSpec, selection: LayerSelection) {
+  const selectedIds = new Set(
+    [...selection.layers, ...selection.groups].map((layer) => layer.object_id),
+  );
+  const root = [...platformSpec.layers, ...platformSpec.groups].find(
+    (layer) => layer.objectId === selection.rootObjectId,
+  );
+  if (!root) {
+    throw new CodesignError('META_SCHEMA_MISMATCH', 'platform selection root is missing', {
+      rootObjectId: selection.rootObjectId,
+      platform: platformSpec.id,
+    });
+  }
+  return {
+    scope: selection.scope,
+    root,
+    layers: platformSpec.layers.filter((layer) => selectedIds.has(layer.objectId)),
+    groups: platformSpec.groups.filter((layer) => selectedIds.has(layer.objectId)),
+  };
 }

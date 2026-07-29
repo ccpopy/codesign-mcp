@@ -16,6 +16,7 @@ Local MCP server for Tencent CoDesign sharing links. It exposes artboards, offic
 - List designs and artboards from a sharing URL.
 - Fetch official `meta_url` specs with layers, groups, text, colors, CSS, and coordinates.
 - Download designer-exported slice assets from the official slice manifest.
+- Copy the current CoDesign screen and layer selection to an Agent with the optional Tampermonkey userscript.
 - Keep login state in a persistent local Chromium profile.
 - Store runtime files in the caller workspace by default.
 - Provide a reusable MCP prompt and read-only workflow resource for design-to-code tasks.
@@ -109,7 +110,7 @@ CODESIGN_LOG_LEVEL=info
 - `codesign_login`: Open a visible Chromium window for CoDesign QR-code login.
 - `codesign_logout`: Clear the persisted profile.
 - `list_artboards`: Resolve a CoDesign sharing URL into designs and artboards.
-- `get_artboard_spec`: Fetch official CoDesign `meta_url` specs with layers, text, colors, CSS, groups, and slice metadata. Optional `targetPlatform` accepts natural-language platform names such as `web`, `Android`, `安卓`, `iOS`, `微信小程序`, or `mini program` and returns `spec.platformSpec` with normalized platform id, units, converted rects, unit-adjusted CSS, and conversion metadata. Optional `targetUnit`, `customScale`, `customWidth`, and `remBasePx` mirror CoDesign's platform settings; for example, a 1440 px target width with rem output and `1rem = 100px` maps to `targetPlatform: "web"`, `targetUnit: "rem"`, `customWidth: 1440`, and `remBasePx: 100`.
+- `get_artboard_spec`: Fetch official CoDesign `meta_url` specs with layers, text, colors, CSS, groups, and slice metadata. With `layerObjectId`, `selectionScope` can be `layer`, `subtree`, or `region`; selected responses include flat layers/groups, a hierarchy tree, selection bounds, and relative coordinates. Optional `targetPlatform` accepts natural-language platform names such as `web`, `Android`, `安卓`, `iOS`, `微信小程序`, or `mini program` and returns platform-adjusted metadata. Optional `targetUnit`, `customScale`, `customWidth`, and `remBasePx` mirror CoDesign's platform settings.
 - `get_artboard_image`: Fetch preview or cover images for visual comparison.
 - `download_slice`: Download designer-exported slice assets from the official slice manifest.
 - `debug_collect_network`: Collect a redacted network summary for diagnosis.
@@ -122,7 +123,7 @@ Remote metadata and artifact downloads are restricted to `https://codesign.qq.co
 
 ## Prompts
 
-- `implement_codesign_page`: Generate a structured design-to-code prompt for a CoDesign sharing link. It guides an Agent to call `list_artboards`, `get_artboard_spec`, and `download_slice` in the intended order.
+- `implement_codesign_page`: Generate a structured design-to-code prompt for a full page or copied CoDesign selection. It guides an Agent to call `list_artboards`, `get_artboard_spec`, and `download_slice` in the intended order.
 
 ## Resources
 
@@ -135,6 +136,32 @@ list_artboards -> get_artboard_spec -> download_slice
 ```
 
 Preview screenshots are for visual comparison, not for production slicing.
+
+## CoDesign AI Selection Userscript
+
+The optional userscript adds a **Copy for AI** button beside the currently selected CoDesign layer. It reads the active screen and layer identifiers already present in the CoDesign page, then copies a structured Agent prompt. It does not make network requests or copy the sharing password.
+
+1. Install [Tampermonkey](https://www.tampermonkey.net/) or another compatible userscript manager.
+2. Open [codesign-ai-selection.user.js](https://raw.githubusercontent.com/ccpopy/codesign-mcp/main/userscripts/codesign-ai-selection.user.js) and confirm installation.
+3. Open a CoDesign sharing page in annotation mode and select a layer or group in the layer tree.
+4. Click **Copy for AI** in the right inspector, then paste the copied prompt into an Agent that has `codesign-mcp` connected.
+5. Provide the sharing password separately when the link requires one.
+
+The copied reference has this shape:
+
+```json
+{
+  "type": "codesign-selection",
+  "sharingUrl": "https://codesign.qq.com/s/<PROJECT_ID>",
+  "screenId": "<SCREEN_ID>",
+  "screenName": "<SCREEN_NAME>",
+  "layerObjectId": "<LAYER_OBJECT_ID>",
+  "layerName": "<LAYER_NAME>",
+  "selectionScope": "region"
+}
+```
+
+`selectionScope=region` returns non-ancestor layers and groups fully contained by the selected bounds, which is useful when visually related elements are siblings rather than strict children. Use `subtree` when only the selected node's strict descendants are wanted. The script reports an explicit error if CoDesign changes the DOM selectors and the current selection cannot be read.
 
 ## Design-to-Code Workflow Prompt
 
@@ -151,7 +178,7 @@ Password: <PASSWORD_IF_REQUIRED>
 Requirements:
 1. First call the codesign-mcp list_artboards tool to get the artboard list.
 2. Then call get_artboard_spec to get the official specification data. If the target platform is known, pass it as targetPlatform, for example `Android`, `iOS`, or `微信小程序`. If the user specifies custom platform settings, also pass targetUnit, customScale, customWidth, and remBasePx.
-3. Translate the coordinates into semantic page structure and normal document flow before coding. Use Flexbox/Grid for page layout; do not recreate the whole page as globally absolute-positioned layers.
+3. Unless the user explicitly requests an absolute/canvas-style implementation, translate the coordinates into semantic page structure and normal document flow before coding. Prefer Flexbox/Grid for page layout and avoid recreating the whole page as globally absolute-positioned layers. An explicit user layout requirement takes precedence over this default.
 4. If the design contains designer-exported slice assets, prefer download_slice. Do not crop assets from the full-page preview image.
 5. Use preview images only for visual comparison, not as production asset sources.
 6. Implement the page in the column directory.
@@ -193,6 +220,7 @@ MIT
 - 从分享链接获取设计稿和画板列表。
 - 获取官方 `meta_url` 标注数据，包括图层、分组、文字、颜色、CSS 和坐标。
 - 从官方切图清单下载设计师导出的切图资源。
+- 通过可选油猴脚本，把当前 CoDesign 画板和图层选区复制给 Agent。
 - 使用本地 Chromium profile 持久化扫码登录态。
 - 默认把运行数据写入调用方项目目录。
 - 提供可复用的 MCP 提示词和只读流程资源，服务于设计还原任务。
@@ -285,7 +313,7 @@ CODESIGN_LOG_LEVEL=info
 - `codesign_login`：打开可见 Chromium 窗口，用于扫码登录 CoDesign。
 - `codesign_logout`：清理持久化 profile。
 - `list_artboards`：把 CoDesign 分享链接解析为设计稿和画板列表。
-- `get_artboard_spec`：读取官方 CoDesign `meta_url` 标注数据，包括图层、文字、颜色、CSS、分组和切图元数据。可选的 `targetPlatform` 支持 `web`、`Android`、`安卓`、`iOS`、`微信小程序`、`mini program` 等自然语言平台名称，并返回 `spec.platformSpec`，其中包含标准平台 ID、单位、转换后的坐标、单位调整后的 CSS 和转换元数据。可选的 `targetUnit`、`customScale`、`customWidth`、`remBasePx` 对应 CoDesign 的平台设置；例如目标宽度 1440 px、输出 rem 且 `1rem = 100px`，应传 `targetPlatform: "web"`、`targetUnit: "rem"`、`customWidth: 1440`、`remBasePx: 100`。
+- `get_artboard_spec`：读取官方 CoDesign `meta_url` 标注数据，包括图层、文字、颜色、CSS、分组和切图元数据。传入 `layerObjectId` 后，`selectionScope` 可设为 `layer`、`subtree` 或 `region`；选区结果包含扁平图层/分组、层级树、选区边界和相对坐标。可选的 `targetPlatform` 支持 `web`、`Android`、`安卓`、`iOS`、`微信小程序`、`mini program` 等自然语言平台名称，并返回平台转换后的标注信息。`targetUnit`、`customScale`、`customWidth`、`remBasePx` 对应 CoDesign 的平台设置。
 - `get_artboard_image`：获取预览图或封面图，主要用于视觉对比。
 - `download_slice`：从官方切图清单下载设计师导出的切图资源。
 - `debug_collect_network`：收集脱敏后的网络摘要，用于诊断。
@@ -298,7 +326,7 @@ CODESIGN_LOG_LEVEL=info
 
 ## 提示词
 
-- `implement_codesign_page`：为 CoDesign 分享链接生成结构化设计还原提示词，引导 Agent 按预期顺序调用 `list_artboards`、`get_artboard_spec` 和 `download_slice`。
+- `implement_codesign_page`：为完整页面或复制的 CoDesign 选区生成结构化设计还原提示词，引导 Agent 按预期顺序调用 `list_artboards`、`get_artboard_spec` 和 `download_slice`。
 
 ## 资源
 
@@ -311,6 +339,32 @@ list_artboards -> get_artboard_spec -> download_slice
 ```
 
 预览截图只适合做视觉对比，不应作为生产切图来源。
+
+## CoDesign AI 选区油猴脚本
+
+可选油猴脚本会在当前选中图层的右侧标注面板中增加“复制给 AI”按钮。它读取 CoDesign 页面中已有的当前画板 ID 和图层对象 ID，生成结构化 Agent 提示词；脚本不会请求额外接口，也不会复制分享访问码。
+
+1. 安装 [Tampermonkey](https://www.tampermonkey.net/) 或其他兼容的用户脚本管理器。
+2. 打开 [codesign-ai-selection.user.js](https://raw.githubusercontent.com/ccpopy/codesign-mcp/main/userscripts/codesign-ai-selection.user.js) 并确认安装。
+3. 在 CoDesign 分享页进入标注模式，从左侧图层树选中一个图层或分组。
+4. 点击右侧检查器中的“复制给 AI”，把提示词粘贴到已经连接 `codesign-mcp` 的 Agent。
+5. 分享链接需要访问码时，单独向 Agent 提供访问码。
+
+复制出的引用格式如下：
+
+```json
+{
+  "type": "codesign-selection",
+  "sharingUrl": "https://codesign.qq.com/s/<PROJECT_ID>",
+  "screenId": "<SCREEN_ID>",
+  "screenName": "<SCREEN_NAME>",
+  "layerObjectId": "<LAYER_OBJECT_ID>",
+  "layerName": "<LAYER_NAME>",
+  "selectionScope": "region"
+}
+```
+
+`selectionScope=region` 会返回选中边界内完整包含的非祖先图层和分组，适合视觉上属于同一区域、但在设计文件中互为兄弟节点的情况。只需要选中节点的严格子层级时，可改用 `subtree`。如果 CoDesign 更新 DOM 结构导致无法读取当前选区，脚本会明确报错，不会复制不完整引用。
 
 ## 设计还原流程提示词
 
@@ -327,7 +381,7 @@ list_artboards -> get_artboard_spec -> download_slice
 要求：
 1. 先调用 codesign-mcp 的 list_artboards 获取画板列表。
 2. 再调用 get_artboard_spec 获取官方标注信息。如果已知目标开发平台，把它作为 targetPlatform 传入，例如 `Android`、`iOS` 或 `微信小程序`。如果用户指定了自定义平台设置，同时传入 targetUnit、customScale、customWidth 和 remBasePx。
-3. 先把坐标信息转译为语义化页面结构和正常文档流，再开始编码。页面布局优先使用 Flexbox/Grid，不要把整页还原成全局绝对定位图层。
+3. 除非用户明确要求 absolute/canvas 式实现，否则先把坐标信息转译为语义化页面结构和正常文档流，再开始编码。页面布局优先使用 Flexbox/Grid，不要把整页还原成全局绝对定位图层；用户明确提出的布局要求优先于该默认策略。
 4. 如果设计稿里存在设计师导出的切图资源，优先调用 download_slice 获取，不要从整页预览图里自行裁图。
 5. 预览图只用于视觉对比，不作为生产切图来源。
 6. 在 column 目录中实现页面。

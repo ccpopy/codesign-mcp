@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.3.0 - 2026-07-29
+
+### Added
+
+- Added a repository-hosted Tampermonkey userscript that copies the active CoDesign screen and layer selection as a structured Agent prompt without including the sharing password.
+- Added `selectionScope` support to `get_artboard_spec`: `layer` preserves the existing single-node response, `subtree` returns strict descendants, and `region` returns all non-ancestor nodes contained by the selected bounds.
+- Added selected-region hierarchy, bounds, relative coordinates, and platform-filtered selection metadata.
+
+### Changed
+
+- Clarified that semantic document flow is the default design-to-code strategy while an explicit user request for absolute or canvas-style positioning takes precedence.
+- Positioned the userscript action before CoDesign's native inspector action so the existing control keeps its expected placement.
+
+### Tests
+
+- Added coverage for single-layer, subtree, spatial region, relative coordinate, and missing-layer selection behavior.
+- Added userscript syntax validation to the test command.
+- Verified region selection against a real CoDesign sharing screen, including spatial sibling layers and relative coordinates.
+
 ## 0.2.0 - 2026-07-02
 
 ### Added
