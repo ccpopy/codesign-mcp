@@ -2,7 +2,7 @@
 // @name         CoDesign AI 选区复制
 // @name:en      CoDesign Copy AI Selection
 // @namespace    https://github.com/ccpopy/codesign-mcp
-// @version      0.1.3
+// @version      0.1.4
 // @description  将当前 CoDesign 画板和图层选区复制为 codesign-mcp 可使用的 Agent 提示词。
 // @description:en Copy the current CoDesign screen and layer selection as a codesign-mcp Agent prompt.
 // @author       codesign-mcp contributors
@@ -23,6 +23,7 @@
   const BUTTON_ID = 'codesign-ai-selection-copy';
   const STYLE_ID = 'codesign-ai-selection-style';
   const TOAST_ID = 'codesign-ai-selection-toast';
+  const USERSCRIPT_VERSION = '0.1.4';
   const SELECTION_SCOPE = 'region';
   const SELECTORS = Object.freeze({
     inspectorHeaders: 'aside.screen-inspector .node-box__header',
@@ -36,10 +37,14 @@
   });
 
   let refreshScheduled = false;
-  const handledClickEvents = new WeakSet();
+  let lastPointerActivationAt = 0;
+  const handledActivationEvents = new WeakSet();
+  const boundButtons = new WeakSet();
 
   document.getElementById(BUTTON_ID)?.remove();
   installStyles();
+  window.addEventListener('pointerdown', handleButtonPointerDown, true);
+  document.addEventListener('pointerdown', handleButtonPointerDown, true);
   document.addEventListener('click', handleButtonClick, true);
   refreshButton();
 
@@ -73,9 +78,8 @@
       button.type = 'button';
       button.textContent = '复制给 AI';
     }
-    button.onclick = handleButtonClick;
-    button.onmousedown = stopButtonEvent;
-    button.onpointerdown = stopButtonEvent;
+    button.dataset.userscriptVersion = USERSCRIPT_VERSION;
+    bindButtonEvents(button);
     const nativeAction = header.querySelector(SELECTORS.inspectorAction);
     if (nativeAction) header.insertBefore(button, nativeAction);
     else if (button.parentElement !== header) header.append(button);
@@ -90,26 +94,54 @@
     if (button.getAttribute('aria-label') !== title) button.setAttribute('aria-label', title);
   }
 
-  function handleButtonClick(event) {
+  function bindButtonEvents(button) {
+    if (boundButtons.has(button)) return;
+    boundButtons.add(button);
+    button.addEventListener('pointerdown', handleButtonPointerDown, true);
+    button.addEventListener('mousedown', stopButtonEvent, true);
+    button.addEventListener('click', handleButtonClick, true);
+  }
+
+  function handleButtonPointerDown(event) {
+    if (event.button !== 0 || event.isPrimary === false) return;
     const button = findEventButton(event);
-    if (!button || handledClickEvents.has(event)) return;
+    if (!button || handledActivationEvents.has(event)) return;
 
-    handledClickEvents.add(event);
-    event.preventDefault();
-    event.stopPropagation();
-    event.stopImmediatePropagation?.();
-
+    handledActivationEvents.add(event);
+    stopButtonEvent(event);
+    lastPointerActivationAt = Date.now();
     if (button.disabled) return;
     void copySelectionPrompt(button);
   }
 
+  function handleButtonClick(event) {
+    const button = findEventButton(event);
+    if (!button || handledActivationEvents.has(event)) return;
+
+    handledActivationEvents.add(event);
+    stopButtonEvent(event);
+
+    if (button.disabled || Date.now() - lastPointerActivationAt < 1000) return;
+    void copySelectionPrompt(button);
+  }
+
   function stopButtonEvent(event) {
-    if (findEventButton(event)) event.stopPropagation();
+    if (!findEventButton(event)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation?.();
   }
 
   function findEventButton(event) {
-    const target = event.target instanceof Element ? event.target : null;
-    return target?.closest(`#${BUTTON_ID}`);
+    const path = typeof event.composedPath === 'function' ? event.composedPath() : [event.target];
+    for (const target of path) {
+      if (target?.id === BUTTON_ID) return target;
+      if (typeof target?.closest === 'function') {
+        const button = target.closest(`#${BUTTON_ID}`);
+        if (button) return button;
+      }
+    }
+    return null;
   }
 
   async function copySelectionPrompt(button) {
