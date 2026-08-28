@@ -2,7 +2,7 @@
 // @name         CoDesign AI 选区复制
 // @name:en      CoDesign Copy AI Selection
 // @namespace    https://github.com/ccpopy/codesign-mcp
-// @version      0.1.2
+// @version      0.1.3
 // @description  将当前 CoDesign 画板和图层选区复制为 codesign-mcp 可使用的 Agent 提示词。
 // @description:en Copy the current CoDesign screen and layer selection as a codesign-mcp Agent prompt.
 // @author       codesign-mcp contributors
@@ -131,22 +131,11 @@
   async function writeClipboard(text) {
     const errors = [];
 
-    if (typeof GM !== 'undefined' && typeof GM.setClipboard === 'function') {
-      try {
-        await GM.setClipboard(text, 'text');
-        return;
-      } catch (error) {
-        errors.push(error);
-      }
-    }
-
-    if (typeof GM_setClipboard === 'function') {
-      try {
-        GM_setClipboard(text, 'text');
-        return;
-      } catch (error) {
-        errors.push(error);
-      }
+    try {
+      copyWithTextArea(text);
+      return;
+    } catch (error) {
+      errors.push(error);
     }
 
     if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
@@ -158,30 +147,65 @@
       }
     }
 
+    if (typeof GM_setClipboard === 'function') {
+      try {
+        GM_setClipboard(text);
+        return;
+      } catch (error) {
+        errors.push(error);
+      }
+    }
+
+    if (typeof GM !== 'undefined' && typeof GM.setClipboard === 'function') {
+      try {
+        await GM.setClipboard(text);
+        return;
+      } catch (error) {
+        errors.push(error);
+      }
+    }
+
+    const lastError = errors.at(-1);
+    const detail = lastError instanceof Error ? `：${lastError.message}` : '';
+    throw new Error(`无法写入剪贴板${detail}`);
+  }
+
+  function copyWithTextArea(text) {
     const textArea = document.createElement('textarea');
     textArea.value = text;
     textArea.setAttribute('readonly', '');
+    textArea.setAttribute('aria-hidden', 'true');
     textArea.style.position = 'fixed';
     textArea.style.left = '-9999px';
     textArea.style.top = '0';
+    textArea.style.opacity = '0';
     document.body.append(textArea);
-    textArea.focus();
+
+    const activeElement = document.activeElement;
+    const selection = document.getSelection();
+    const selectedRanges = [];
+    if (selection) {
+      for (let index = 0; index < selection.rangeCount; index += 1) {
+        selectedRanges.push(selection.getRangeAt(index).cloneRange());
+      }
+    }
+
+    textArea.focus({ preventScroll: true });
     textArea.select();
 
     try {
       if (!document.execCommand('copy')) {
         throw new Error('浏览器拒绝写入剪贴板，请检查用户脚本管理器的剪贴板权限。');
       }
-      return;
-    } catch (error) {
-      errors.push(error);
     } finally {
       textArea.remove();
-    }
 
-    const lastError = errors.at(-1);
-    const detail = lastError instanceof Error ? `：${lastError.message}` : '';
-    throw new Error(`无法写入剪贴板${detail}`);
+      if (selection) {
+        selection.removeAllRanges();
+        for (const range of selectedRanges) selection.addRange(range);
+      }
+      if (activeElement instanceof HTMLElement) activeElement.focus({ preventScroll: true });
+    }
   }
 
   function setButtonBusy(button, busy) {
