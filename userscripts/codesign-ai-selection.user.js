@@ -2,7 +2,7 @@
 // @name         CoDesign AI 选区复制
 // @name:en      CoDesign Copy AI Selection
 // @namespace    https://github.com/ccpopy/codesign-mcp
-// @version      0.1.1
+// @version      0.1.2
 // @description  将当前 CoDesign 画板和图层选区复制为 codesign-mcp 可使用的 Agent 提示词。
 // @description:en Copy the current CoDesign screen and layer selection as a codesign-mcp Agent prompt.
 // @author       codesign-mcp contributors
@@ -11,6 +11,7 @@
 // @match        https://codesign.qq.com/app/s/*
 // @match        https://codesign.qq.com/s/*
 // @grant        GM_setClipboard
+// @grant        GM.setClipboard
 // @run-at       document-idle
 // @updateURL    https://raw.githubusercontent.com/ccpopy/codesign-mcp/main/userscripts/codesign-ai-selection.user.js
 // @downloadURL  https://raw.githubusercontent.com/ccpopy/codesign-mcp/main/userscripts/codesign-ai-selection.user.js
@@ -35,8 +36,11 @@
   });
 
   let refreshScheduled = false;
+  const handledClickEvents = new WeakSet();
 
+  document.getElementById(BUTTON_ID)?.remove();
   installStyles();
+  document.addEventListener('click', handleButtonClick, true);
   refreshButton();
 
   const observer = new MutationObserver(scheduleRefresh);
@@ -68,8 +72,10 @@
       button.id = BUTTON_ID;
       button.type = 'button';
       button.textContent = '复制给 AI';
-      button.addEventListener('click', copySelectionPrompt);
     }
+    button.onclick = handleButtonClick;
+    button.onmousedown = stopButtonEvent;
+    button.onpointerdown = stopButtonEvent;
     const nativeAction = header.querySelector(SELECTORS.inspectorAction);
     if (nativeAction) header.insertBefore(button, nativeAction);
     else if (button.parentElement !== header) header.append(button);
@@ -84,17 +90,104 @@
     if (button.getAttribute('aria-label') !== title) button.setAttribute('aria-label', title);
   }
 
-  function copySelectionPrompt() {
+  function handleButtonClick(event) {
+    const button = findEventButton(event);
+    if (!button || handledClickEvents.has(event)) return;
+
+    handledClickEvents.add(event);
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation?.();
+
+    if (button.disabled) return;
+    void copySelectionPrompt(button);
+  }
+
+  function stopButtonEvent(event) {
+    if (findEventButton(event)) event.stopPropagation();
+  }
+
+  function findEventButton(event) {
+    const target = event.target instanceof Element ? event.target : null;
+    return target?.closest(`#${BUTTON_ID}`);
+  }
+
+  async function copySelectionPrompt(button) {
+    setButtonBusy(button, true);
     try {
       const selection = readSelection(true);
       const prompt = buildPrompt(selection);
-      GM_setClipboard(prompt, 'text');
+      await writeClipboard(prompt);
       showToast(`已复制：${selection.screenName} / ${selection.layerName}`, 'success');
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.error('[codesign-ai-selection]', error);
       showToast(message, 'error');
+    } finally {
+      setButtonBusy(button, false);
     }
+  }
+
+  async function writeClipboard(text) {
+    const errors = [];
+
+    if (typeof GM !== 'undefined' && typeof GM.setClipboard === 'function') {
+      try {
+        await GM.setClipboard(text, 'text');
+        return;
+      } catch (error) {
+        errors.push(error);
+      }
+    }
+
+    if (typeof GM_setClipboard === 'function') {
+      try {
+        GM_setClipboard(text, 'text');
+        return;
+      } catch (error) {
+        errors.push(error);
+      }
+    }
+
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      try {
+        await navigator.clipboard.writeText(text);
+        return;
+      } catch (error) {
+        errors.push(error);
+      }
+    }
+
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.setAttribute('readonly', '');
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-9999px';
+    textArea.style.top = '0';
+    document.body.append(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+      if (!document.execCommand('copy')) {
+        throw new Error('浏览器拒绝写入剪贴板，请检查用户脚本管理器的剪贴板权限。');
+      }
+      return;
+    } catch (error) {
+      errors.push(error);
+    } finally {
+      textArea.remove();
+    }
+
+    const lastError = errors.at(-1);
+    const detail = lastError instanceof Error ? `：${lastError.message}` : '';
+    throw new Error(`无法写入剪贴板${detail}`);
+  }
+
+  function setButtonBusy(button, busy) {
+    if (!button) return;
+    button.dataset.copying = busy ? 'true' : 'false';
+    button.textContent = busy ? '复制中...' : '复制给 AI';
   }
 
   function readSelection(required, inspectorHeader = findInspectorHeader()) {
@@ -222,6 +315,8 @@ ${reference}
     style.id = STYLE_ID;
     style.textContent = `
 #${BUTTON_ID} {
+  position: relative;
+  z-index: 2147483647;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -237,6 +332,7 @@ ${reference}
   font: 500 12px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   letter-spacing: 0;
   cursor: pointer;
+  pointer-events: auto;
 }
 
 #${BUTTON_ID}:hover:not(:disabled) {
