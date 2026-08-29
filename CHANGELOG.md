@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.1 - 2026-08-29
+
+### Fixed
+
+- Encoded slice `object_id` values as reversible, cross-platform filename components so Windows downloads no longer fail for Figma-style IDs containing reserved characters such as `:`. ([#3](https://github.com/ccpopy/codesign-mcp/issues/3))
+- Preserved existing UUID-style slice filenames while avoiding collisions with identifiers that already contain percent-encoded text.
+
+### Tests
+
+- Added regression coverage for UUID-style IDs, Windows-incompatible Figma-style IDs, and filename-encoding collisions.
+- Verified real PNG downloads for both a UUID-style slice and the Issue #3 Figma-style slice on Windows.
+
 ## 0.3.0 - 2026-07-29
 
 ### Added

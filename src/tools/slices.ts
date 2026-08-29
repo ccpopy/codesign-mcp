@@ -6,6 +6,7 @@ import { fetchSliceManifest, findSliceByObjectId } from '../codesign/slices.js';
 import { CodesignError } from '../codesign/errors.js';
 import { normalizeCodesignAssetUrl, parseSharingId } from '../utils/url.js';
 import { downloadToArtifact } from '../utils/download.js';
+import { encodeFilenameComponent } from '../utils/filename.js';
 import { errorResult } from './artboards.js';
 import { pickScreen, summarizeScreens } from './spec.js';
 import { getLogger } from '../logger.js';
@@ -160,7 +161,7 @@ export function registerSlicesTool(server: McpServer): void {
             continue;
           }
           const downloadUrl = normalizeCodesignAssetUrl(url);
-          const filename = `${slice.object_id}-${e.scale ?? 1}x.${e.format ?? extFromMime(e.screenshot?.mime) ?? 'png'}`;
+          const filename = `${encodeFilenameComponent(slice.object_id)}-${e.scale ?? 1}x.${e.format ?? extFromMime(e.screenshot?.mime) ?? 'png'}`;
           const dl = await downloadToArtifact(
             downloadUrl,
             `${sharingId}/slices`,
