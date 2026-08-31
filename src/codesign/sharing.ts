@@ -4,7 +4,7 @@ import { getLogger } from '../logger.js';
 import { requestJson } from '../utils/http.js';
 import { CodesignError } from './errors.js';
 import { probeLoggedIn } from '../browser/session.js';
-import type { SharingDetail, StateKeyResponse } from './types.js';
+import type { SharingDetail, SharingScreen, StateKeyResponse } from './types.js';
 
 const log = getLogger();
 
@@ -63,8 +63,8 @@ export async function fetchSharingDetail(
   });
   log.debug({ status: resp.status, hasStateKey: !!stateKey }, 'sharing-detail response');
 
-  if (resp.status === 200 && resp.body && typeof resp.body === 'object' && 'designs' in (resp.body as object)) {
-    return resp.body as SharingDetail;
+  if (resp.status === 200) {
+    return normalizeSharingDetail(resp.body, { sharingId, status: resp.status });
   }
   if (resp.status === 403) {
     // 没有 state-key 通常意味着需要密码
@@ -84,6 +84,60 @@ export async function fetchSharingDetail(
     sharingId,
     status: resp.status,
   });
+}
+
+export function normalizeSharingDetail(
+  body: unknown,
+  errorDetails?: Record<string, unknown>,
+): SharingDetail {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    throw unexpectedSharingDetail(errorDetails);
+  }
+
+  const record = body as Record<string, unknown>;
+  if (Array.isArray(record.designs)) {
+    return body as SharingDetail;
+  }
+
+  if (!Array.isArray(record.screens)) {
+    throw unexpectedSharingDetail(errorDetails);
+  }
+
+  const id = record.id;
+  if (typeof id !== 'number' || !Number.isSafeInteger(id)) {
+    throw unexpectedSharingDetail(errorDetails);
+  }
+
+  const title = firstNonEmptyString(record.title, record.name) ?? `Sharing ${id}`;
+  const designId =
+    typeof record.design_id === 'number' && Number.isSafeInteger(record.design_id)
+      ? record.design_id
+      : id;
+  const designName = firstNonEmptyString(record.design_name, record.name, record.title) ?? title;
+
+  return {
+    id,
+    title,
+    designs: [
+      {
+        id: designId,
+        name: designName,
+        screens: record.screens as SharingScreen[],
+      },
+    ],
+  };
+}
+
+function unexpectedSharingDetail(details?: Record<string, unknown>): CodesignError {
+  return new CodesignError(
+    'SHARING_NOT_FOUND',
+    'unexpected sharing-detail response',
+    details,
+  );
+}
+
+function firstNonEmptyString(...values: unknown[]): string | undefined {
+  return values.find((value): value is string => typeof value === 'string' && value.length > 0);
 }
 
 // 综合入口：根据 password 选择是否换 state-key，再拉 detail。

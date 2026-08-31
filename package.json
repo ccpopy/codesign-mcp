@@ -1,6 +1,6 @@
 {
   "name": "codesign-mcp",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Local MCP server for Tencent CoDesign — read sharing artboards, specs, screenshots and slices.",
   "type": "module",
   "license": "MIT",
@@ -43,7 +43,7 @@
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "npm run build && node --check userscripts/codesign-ai-selection.user.js && node --test tests/config.test.mjs tests/download.test.mjs tests/http.test.mjs tests/login.test.mjs tests/mcp.test.mjs tests/parser.test.mjs tests/platform.test.mjs tests/redact.test.mjs tests/selection.test.mjs tests/slices.test.mjs tests/startup.test.mjs tests/url.test.mjs",
+    "test": "npm run build && node --check userscripts/codesign-ai-selection.user.js && node --test tests/config.test.mjs tests/download.test.mjs tests/http.test.mjs tests/login.test.mjs tests/mcp.test.mjs tests/parser.test.mjs tests/platform.test.mjs tests/redact.test.mjs tests/selection.test.mjs tests/sharing.test.mjs tests/slices.test.mjs tests/startup.test.mjs tests/url.test.mjs",
     "prepack": "npm run build",
     "install:browsers": "playwright install chromium"
   },
